@@ -49,7 +49,9 @@
 <script setup>
 import { ref } from 'vue'
 import { useAuthStore } from '~/stores/auth'
-
+definePageMeta({
+  layout:false
+})
 const authStore = useAuthStore()
 const router = useRouter()
 

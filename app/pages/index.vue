@@ -7,12 +7,7 @@ const authStore = useAuthStore()
 </script>
 
 <template>
-  <NuxtLayout name="main-layout">
-    <div class="dashboard-container">
-      <h1>Dashboard Commissioni</h1>
-      <p>Benvenuto, {{ authStore.user?.username }}</p>
-    </div>
-  </NuxtLayout>
+
 </template>
 
 <style scoped lang="scss">
