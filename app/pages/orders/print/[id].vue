@@ -217,8 +217,8 @@ const formatDate = (d) => {
 };
 
 const formatNum = (v) => {
-  if (v == null) return "0";
-  return new Intl.NumberFormat("it-IT").format(v);
+  if (v == null) return "0,00";
+  return new Intl.NumberFormat("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
 };
 
 const clientFullName = computed(() => {

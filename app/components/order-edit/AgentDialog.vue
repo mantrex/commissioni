@@ -54,7 +54,6 @@
 
       <!-- Azioni -->
       <div class="form-actions">
-        <q-btn flat label="Annulla" color="negative" @click="emit('close')" />
         <q-btn type="submit" label="Salva" color="primary" unelevated :loading="saving" />
       </div>
 

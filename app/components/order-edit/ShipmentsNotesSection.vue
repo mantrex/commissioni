@@ -131,7 +131,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive, watch, nextTick } from 'vue'
 import { useQuasar } from 'quasar'
 
 const shipments = defineModel('shipments', {
@@ -182,9 +182,11 @@ const rawInput = reactive({ ca: '', rd: '', ric: '', pay: '' })
 
 const onFocus = (field) => {
   focusedField.value = field
-  // Mostra il numero grezzo (con virgola) per l'editing
-  const val = financial.value[field]
-  rawInput[field] = val ? String(val).replace('.', ',') : ''
+  rawInput[field] = financial.value[field] ? String(financial.value[field]).replace('.', ',') : ''
+  setTimeout(() => {
+    const el = document.activeElement
+    if (el) el.select()
+  }, 0)
 }
 
 const onBlur = (field) => {

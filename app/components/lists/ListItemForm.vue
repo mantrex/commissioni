@@ -14,7 +14,6 @@
     <q-toggle v-model="localData.selectable" label="Attivo (visibile nelle selezioni)" />
 
     <div class="form-actions q-mt-md">
-      <q-btn flat label="Annulla" color="negative" @click="emit('close', null)" />
       <q-btn label="Salva" color="primary" unelevated :loading="saving" @click="handleSave" />
     </div>
   </div>

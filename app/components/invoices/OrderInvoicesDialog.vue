@@ -94,7 +94,6 @@
       </div>
 
       <div class="dialog-actions q-mt-md">
-        <q-btn flat label="Annulla" color="negative" @click="emit('close', null)" />
         <q-btn
           color="primary"
           label="Crea Fattura"

@@ -1,7 +1,7 @@
 <template>
   <div class="invoice-item-dialog-content">
     <q-form @submit.prevent="handleSave" class="invoice-item-form">
-      <!-- ✅ NUOVO: Autocomplete per selezionare prodotto esistente o nuovo -->
+      <!-- Autocomplete per selezionare prodotto esistente o nuovo -->
       <div class="form-section">
         <div class="section-title">Seleziona Articolo</div>
         <q-select v-model="selectedProductOption" :options="productOptions" option-label="label" option-value="value"
@@ -44,12 +44,19 @@
               :rules="[val => val >= 0 || 'Quantità non valida']" />
           </div>
           <div class="col-6">
-            <q-input v-model.number="localItem.unitPrice" label="Prezzo Un. *" type="number" outlined dense step="0.01"
-              min="0" :rules="[val => val >= 0 || 'Prezzo non valido']" />
+            <q-input
+              :model-value="unitPriceFocused ? rawUnitPrice : formatEuro(localItem.unitPrice)"
+              label="Prezzo Un. *"
+              outlined dense
+              inputmode="decimal"
+              :rules="[() => localItem.unitPrice >= 0 || 'Prezzo non valido']"
+              @focus="onUnitPriceFocus"
+              @blur="onUnitPriceBlur"
+              @update:model-value="v => rawUnitPrice = v" />
           </div>
         </div>
 
-        <q-input v-model="computedTotal" label="Totale" outlined dense readonly class="q-mt-sm total-field">
+        <q-input :model-value="computedTotal" label="Totale" outlined dense readonly class="q-mt-sm total-field">
           <template v-slot:prepend>
             <q-icon name="euro" />
           </template>
@@ -57,7 +64,6 @@
       </div>
 
       <div class="form-actions">
-        <q-btn flat label="Annulla" color="negative" @click="emit('close')" />
         <q-btn type="submit" label="Salva" color="primary" unelevated />
       </div>
     </q-form>
@@ -76,7 +82,6 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close'])
-
 const $q = useQuasar()
 
 const localItem = ref({
@@ -92,15 +97,45 @@ const selectedProductOption = ref(null)
 const allProducts = ref([])
 const productOptions = ref([])
 
+// ─── Formattazione euro ───────────────────────────────────────────────────────
+const formatEuro = (value) => {
+  const n = parseFloat(value)
+  if (isNaN(n)) return ''
+  return new Intl.NumberFormat('it-IT', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(n)
+}
+
+const parseEuro = (value) => {
+  if (value === null || value === undefined || value === '') return 0
+  const cleaned = String(value).replace(/\./g, '').replace(',', '.')
+  const n = parseFloat(cleaned)
+  return isNaN(n) ? 0 : n
+}
+
+// ─── Focus/blur unitPrice ─────────────────────────────────────────────────────
+const unitPriceFocused = ref(false)
+const rawUnitPrice = ref('')
+
+const onUnitPriceFocus = () => {
+  unitPriceFocused.value = true
+  rawUnitPrice.value = localItem.value.unitPrice ? String(localItem.value.unitPrice).replace('.', ',') : ''
+  setTimeout(() => { if (document.activeElement) document.activeElement.select() }, 0)
+}
+
+const onUnitPriceBlur = () => {
+  localItem.value.unitPrice = parseEuro(rawUnitPrice.value)
+  unitPriceFocused.value = false
+}
+
+// ─── Totale calcolato ─────────────────────────────────────────────────────────
 const computedTotal = computed(() => {
   const total = (localItem.value.quantity || 0) * (localItem.value.unitPrice || 0)
-  return new Intl.NumberFormat('it-IT', {
-    style: 'currency',
-    currency: 'EUR'
-  }).format(total)
+  return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(total)
 })
 
-// ✅ Carica lista prodotti
+// ─── Carica prodotti ──────────────────────────────────────────────────────────
 const loadProducts = async () => {
   try {
     const data = await $fetch('/api/products')
@@ -112,7 +147,6 @@ const loadProducts = async () => {
         product: p,
         isNew: false
       }))
-
       productOptions.value = [
         { label: '➕ Crea nuovo articolo', value: 'new', isNew: true },
         ...allProducts.value
@@ -123,7 +157,6 @@ const loadProducts = async () => {
   }
 }
 
-// ✅ Filtra prodotti nell'autocomplete
 const filterProducts = (val, update) => {
   if (val === '') {
     update(() => {
@@ -134,7 +167,6 @@ const filterProducts = (val, update) => {
     })
     return
   }
-
   update(() => {
     const needle = val.toLowerCase()
     const filtered = allProducts.value.filter(
@@ -148,7 +180,6 @@ const filterProducts = (val, update) => {
   })
 }
 
-// ✅ Gestisce selezione prodotto dall'autocomplete
 const handleProductSelect = (option) => {
   if (!option) {
     localItem.value.productId = null
@@ -157,22 +188,19 @@ const handleProductSelect = (option) => {
     selectedProductOption.value = null
     return
   }
-
   if (option.isNew) {
-    // Nuovo prodotto - pulisce i campi
     localItem.value.productId = null
     localItem.value.code = ''
     localItem.value.description = ''
     selectedProductOption.value = null
   } else {
-    // Carica prodotto esistente
     localItem.value.productId = option.product._id
     localItem.value.code = option.product.code || ''
     localItem.value.description = option.product.name || ''
   }
 }
 
-// ✅ Watch per caricare i dati quando si modifica un item esistente
+// ─── Watch props.item ─────────────────────────────────────────────────────────
 watch(() => props.item, (newVal) => {
   if (newVal && Object.keys(newVal).length > 0) {
     localItem.value = {
@@ -183,13 +211,9 @@ watch(() => props.item, (newVal) => {
       quantity: newVal.quantity || 0,
       unitPrice: newVal.unitPrice || 0
     }
-
-    // Se c'è un prodotto associato, pre-seleziona nell'autocomplete
     if (newVal.productId) {
       const product = allProducts.value.find(p => p.value === newVal.productId)
-      if (product) {
-        selectedProductOption.value = product
-      }
+      if (product) selectedProductOption.value = product
     }
   } else {
     localItem.value = {
@@ -204,35 +228,23 @@ watch(() => props.item, (newVal) => {
   }
 }, { immediate: true, deep: true })
 
+// ─── Salva ────────────────────────────────────────────────────────────────────
 const handleSave = () => {
   if (!localItem.value.description) {
-    $q.notify({
-      type: 'negative',
-      message: 'La descrizione è obbligatoria'
-    })
+    $q.notify({ type: 'negative', message: 'La descrizione è obbligatoria' })
     return
   }
-
   if (localItem.value.quantity < 0) {
-    $q.notify({
-      type: 'negative',
-      message: 'La quantità non può essere negativa'
-    })
+    $q.notify({ type: 'negative', message: 'La quantità non può essere negativa' })
     return
   }
-
   if (localItem.value.unitPrice < 0) {
-    $q.notify({
-      type: 'negative',
-      message: 'Il prezzo non può essere negativo'
-    })
+    $q.notify({ type: 'negative', message: 'Il prezzo non può essere negativo' })
     return
   }
-
   emit('close', localItem.value)
 }
 
-// ✅ Carica prodotti al mount
 onMounted(() => {
   loadProducts()
 })
