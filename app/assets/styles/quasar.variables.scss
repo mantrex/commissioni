@@ -1,0 +1,23 @@
+// Base
+$header : #4a4a4a; 
+$primary : #4a4a4a; // uguale all'header per coerenza
+$body : #ffffff;
+$bg2 : #141e26;
+// Complementari diretti
+$contrast : white;
+$altcontrast: black;
+$altcontrast2: #333333;
+
+$border: grey;
+$secondary : #00ac7a; // verde/teal (complementare di rosso scuro)
+$accent : #32ac00; // verde brillante (complementare del magenta)
+
+$dark : #1d1d1d; // già buono
+$dark-page : #0d0d0d; // quasi nero, perfetto per footer
+$footer : #0d0d0d; // alias, se vuoi un colore dedicato
+
+// Stato / messaggi (complementari e leggibili)
+$positive : #2188ba; // blu intenso (complementare del verde originale)
+$negative : #ba4521; // arancio bruciato (complementare del rosso puro)
+$info : #cc31a5; // magenta/viola (complementare dell’azzurro)
+$warning : #2bc0f2; // azzurro brillante (complementare del giallo oro)
