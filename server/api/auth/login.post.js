@@ -1,9 +1,8 @@
 import bcrypt from 'bcryptjs'
-import { connectDB } from '~/server/utils/db'
-import Admin from '~/server/models/Admin'
+import Admin from '~~/server/models/Admin'
 
 export default defineEventHandler(async (event) => {
-  await connectDB()
+
 
   const { username, password } = await readBody(event)
 

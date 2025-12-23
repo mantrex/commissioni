@@ -1,6 +1,6 @@
-import { defineStore } from 'pinia'
+import { defineStore } from "pinia"
 
-export const useAuthStore = defineStore('auth', {
+export const useAuthStore = defineStore("auth", {
   state: () => ({
     user: null,
     isAuthenticated: false,
@@ -11,24 +11,23 @@ export const useAuthStore = defineStore('auth', {
     async login(username, password) {
       this.loading = true
       try {
-        const { data, error } = await useFetch('/api/auth/login', {
-          method: 'POST',
+        const { data, error } = await useFetch("/api/auth/login", {
+          method: "POST",
           body: { username, password }
         })
 
+        // ✅ error è un Ref -> devi leggere .value
         if (error.value) {
-          throw new Error(error.value.data?.message || 'Errore durante il login')
+          throw new Error(error.value?.data?.message || error.value?.message || "Errore durante il login")
         }
 
-        this.user = data.value.user
-        this.isAuthenticated = true
+        // ✅ data è un Ref
+        this.user = data.value?.user ?? null
+        this.isAuthenticated = !!this.user
 
         return { success: true }
-      } catch (error) {
-        return {
-          success: false,
-          error: error.message
-        }
+      } catch (err) {
+        return { success: false, error: err.message }
       } finally {
         this.loading = false
       }
@@ -36,26 +35,36 @@ export const useAuthStore = defineStore('auth', {
 
     async logout() {
       try {
-        await $fetch('/api/auth/logout', { method: 'POST' })
+        const { error } = await useFetch("/api/auth/logout", { method: "POST" })
+
+        // ✅ controlla error.value
+        if (error.value) {
+          throw new Error(error.value?.data?.message || error.value?.message || "Errore logout")
+        }
+
         this.user = null
         this.isAuthenticated = false
-
-        // Redirect alla login
-        navigateTo('/login')
-      } catch (error) {
-        console.error('Errore logout:', error)
+        navigateTo("/login")
+      } catch (err) {
+        console.error("Errore logout:", err)
       }
     },
 
     async checkAuth() {
       try {
-        const { data } = await useFetch('/api/auth/me')
+        // ✅ devi destrutturare { data, error }
+        const { data, error } = await useFetch("/api/auth/me", { method: "GET" })
 
-        if (data.value) {
-          this.user = data.value.user
-          this.isAuthenticated = true
+        if (error.value) {
+          // 401/403 ecc. -> non autenticato
+          this.user = null
+          this.isAuthenticated = false
+          return
         }
-      } catch (error) {
+
+        this.user = data.value?.user ?? null
+        this.isAuthenticated = !!this.user
+      } catch {
         this.user = null
         this.isAuthenticated = false
       }

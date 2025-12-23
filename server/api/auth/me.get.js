@@ -1,10 +1,7 @@
-import { connectDB } from '~/server/utils/db'
-import Admin from '~/server/models/Admin'
+import Admin from '~~/server/models/Admin'
 
 export default defineEventHandler(async (event) => {
-  await connectDB()
 
-  // Ottiene e verifica la sessione (auto-importato!)
   const session = getSessionFromCookie(event)
 
   if (!session) {

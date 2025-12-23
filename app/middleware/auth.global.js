@@ -1,23 +1,21 @@
-import { useAuthStore } from "~/stores/auth"
+// auth.global.js
 export default defineNuxtRouteMiddleware(async (to) => {
   const authStore = useAuthStore()
-
-  // Pagine pubbliche
   const publicPages = ['/login']
   const isPublicPage = publicPages.includes(to.path)
 
-  // Se non è autenticato, controlla la sessione
+  // Prima verifica: se già autenticato e vai al login, redirect
+  if (authStore.isAuthenticated && isPublicPage) {
+    return navigateTo('/')
+  }
+
+  // Se non autenticato, verifica la sessione
   if (!authStore.isAuthenticated && !isPublicPage) {
     await authStore.checkAuth()
-  }
 
-  // Se non autenticato e non è pagina pubblica, redirect al login
-  if (!authStore.isAuthenticated && !isPublicPage) {
-    return navigateTo('/login')
-  }
-
-  // Se autenticato e cerca di accedere al login, redirect alla home
-  if (authStore.isAuthenticated && to.path === '/login') {
-    return navigateTo('/')
+    // Dopo il check, se ancora non autenticato, redirect obbligatorio
+    if (!authStore.isAuthenticated) {
+      return navigateTo('/login')
+    }
   }
 })

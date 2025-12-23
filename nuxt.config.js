@@ -1,5 +1,9 @@
 export default defineNuxtConfig({
   ssr: false,
+  devServer: {
+    port: 3000,
+    host: '0.0.0.0'
+  },
   devtools: { enabled: true },
   ignore: ["temp/**", "public/temp/**"],
 
@@ -7,12 +11,10 @@ export default defineNuxtConfig({
     preset: "node-server",
     sourceMap: true, // Sempre attivo per debug
   },
-
   runtimeConfig: {
     mongodbUri: process.env.MONGODB_URI,
     adminPassword: process.env.ADMIN_PASSWORD,
     sessionSecret: process.env.SESSION_SECRET,
-
     public: {},
   },
 
