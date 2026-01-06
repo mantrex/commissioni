@@ -1,13 +1,10 @@
-// server/api/orders/index.get.js
 import Order from '~~/server/models/Order'
 import '~~/server/models/Client'
 import '~~/server/models/Agent'
+import { isValidStatus, getStatusLabel, getStatusCode } from '~~/utils/statuses'
 
 export default defineEventHandler(async (event) => {
   try {
-    // ✅ Forza la registrazione dei modelli importandoli
-    // Basta importarli sopra, ma assicuriamoci che Mongoose li conosca
-
     const query = getQuery(event)
 
     // Parametri paginazione
@@ -28,39 +25,133 @@ export default defineEventHandler(async (event) => {
       filters.commNum = { $regex: query.commNum, $options: 'i' }
     }
 
+    // Filtro per stato (validato)
+    if (query.status) {
+      if (!isValidStatus(query.status)) {
+        throw createError({
+          statusCode: 400,
+          message: `Stato non valido: ${query.status}`
+        })
+      }
+      filters.status = query.status
+    }
+
     // Filtro scadenza
     if (query.expiredDays) {
       const daysAgo = parseInt(query.expiredDays)
       const cutoffDate = new Date()
       cutoffDate.setDate(cutoffDate.getDate() - daysAgo)
-
       filters.dueDate = { $lte: cutoffDate }
     } else if (query.notExpired === 'true') {
       filters.dueDate = { $gt: new Date() }
     }
 
-    // Esegui query CON populate
+    // Filtri avanzati cliente (tramite populate)
+    const populateMatch = {}
+    if (query.clientLastname) {
+      populateMatch['clientId.lastname'] = { $regex: query.clientLastname, $options: 'i' }
+    }
+    if (query.clientFirstname) {
+      populateMatch['clientId.firstname'] = { $regex: query.clientFirstname, $options: 'i' }
+    }
+    if (query.clientCity) {
+      populateMatch['clientId.city'] = { $regex: query.clientCity, $options: 'i' }
+    }
+    if (query.clientCountry) {
+      populateMatch['clientId.state'] = { $regex: query.clientCountry, $options: 'i' }
+    }
+    if (query.clientVip !== undefined) {
+      populateMatch['clientId.vip'] = query.clientVip === 'true'
+    }
+
+    // Filtro agente
+    if (query.agentId) {
+      filters.agentId = query.agentId
+    }
+
+    // Filtro prodotto (cerca negli items)
+    if (query.productCode) {
+      // TODO: implementare ricerca nei products degli items
+      // Per ora skippiamo, serve una query più complessa
+    }
+
+    // Filtri date commissione
+    if (query.dateFrom || query.dateTo) {
+      filters.date = {}
+      if (query.dateFrom) filters.date.$gte = new Date(query.dateFrom)
+      if (query.dateTo) filters.date.$lte = new Date(query.dateTo)
+    }
+
+    // Filtri date scadenza
+    if (query.dueDateFrom || query.dueDateTo) {
+      if (!filters.dueDate) filters.dueDate = {}
+      if (query.dueDateFrom) {
+        filters.dueDate.$gte = new Date(query.dueDateFrom)
+      }
+      if (query.dueDateTo) {
+        filters.dueDate.$lte = new Date(query.dueDateTo)
+      }
+    }
+
+    // Esegui query con populate
+    let ordersQuery = Order.find(filters)
+      .sort(sort)
+      .skip(skip)
+      .limit(limit)
+      .populate('clientId', 'firstname lastname company city state vip')
+      .populate('agentId', 'firstname lastname')
+      .lean()
+
     const [orders, total] = await Promise.all([
-      Order.find(filters)
-        .sort(sort)
-        .skip(skip)
-        .limit(limit)
-        .populate('clientId', 'firstname lastname company')
-        .populate('agentId', 'firstname lastname')
-        .lean(),
+      ordersQuery,
       Order.countDocuments(filters)
     ])
 
+    // Filtra post-populate se necessario (per filtri cliente)
+    let filteredOrders = orders
+    if (Object.keys(populateMatch).length > 0) {
+      filteredOrders = orders.filter(order => {
+        for (const [key, condition] of Object.entries(populateMatch)) {
+          const field = key.split('.')[1]
+          const value = order.clientId?.[field]
+
+          if (condition.$regex) {
+            if (!value || !new RegExp(condition.$regex, condition.$options).test(value)) {
+              return false
+            }
+          } else if (condition !== value) {
+            return false
+          }
+        }
+        return true
+      })
+    }
+
+    // Arricchisci con info stato
+    const enrichedOrders = filteredOrders.map(order => ({
+      ...order,
+      statusInfo: {
+        key: order.status,
+        label: getStatusLabel(order.status),
+        code: getStatusCode(order.status)
+      }
+    }))
+
     return {
       success: true,
-      orders,
-      total,
+      orders: enrichedOrders,
+      total: filteredOrders.length,
       page,
-      pages: Math.ceil(total / limit)
+      pages: Math.ceil(filteredOrders.length / limit)
     }
 
   } catch (error) {
     console.error('Errore API orders:', error)
+
+    if (error.statusCode === 400) {
+      throw error
+    }
+
     throw createError({
       statusCode: 500,
       message: 'Errore nel recupero degli ordini',

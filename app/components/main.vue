@@ -2,9 +2,9 @@
   <q-page class="orders-page">
     <!-- Sidebar con menu principale -->
     <div class="sidebar">
-      <q-btn class="menu-btn" color="primary" icon="add" label="Nuova " unelevated @click="handleNewOrder" />
+      <q-btn class="menu-btn" color="primary" icon="add" label="Nuova commissione" unelevated @click="handleNewOrder" />
 
-      <q-btn class="menu-btn" color="secondary" icon="search" label="Ricerca " unelevated @click="focusSearch" />
+      <q-btn class="menu-btn" color="secondary" icon="search" label="Ricerca Comm" unelevated @click="focusSearch" />
 
       <q-btn class="menu-btn" color="accent" icon="receipt" label="Fattura" unelevated @click="handleInvoice" />
 
@@ -72,7 +72,7 @@
       <!-- Tabella ordini -->
       <div class="table-section q-mt-md">
         <q-table flat bordered :rows="orders" :columns="columns" row-key="_id" :loading="loading"
-          :pagination="pagination" @request="onRequest" @row-click="handleRowClick" class="orders-table" virtual-scroll
+          v-model:pagination="pagination" @request="onRequest" @row-click="handleRowClick" class="orders-table"
           :rows-per-page-options="[10, 25, 50, 100]">
           <!-- Loading -->
           <template v-slot:loading>
@@ -119,7 +119,8 @@
           <!-- Colonna stato con badge colorato -->
           <template v-slot:body-cell-status="props">
             <q-td :props="props">
-              <q-badge :color="getStatusColor(props.row.status)" :label="props.row.status || 'N/A'" />
+              <q-badge :color="getStatusColor(props.row.status)"
+                :label="props.row.statusInfo?.label || props.row.status || 'N/A'" />
             </q-td>
           </template>
 
@@ -148,7 +149,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 
@@ -180,13 +181,13 @@ const expiredOptions = [
   { label: 'Scaduti personalizzati', value: 'custom' }
 ]
 
-// Paginazione
+// ✅ Paginazione - IMPORTANTE: deve essere reactive
 const pagination = ref({
   sortBy: 'dueDate',
   descending: false,
   page: 1,
   rowsPerPage: 25,
-  rowsNumber: 0
+  rowsNumber: 0  // ← questo viene aggiornato dall'API
 })
 
 // Colonne tabella
@@ -277,6 +278,8 @@ const loadOrders = async () => {
 
     orders.value = data.value.orders || []
     totalOrders.value = data.value.total || 0
+
+    // ✅ CRITICAL: aggiorna rowsNumber per la paginazione
     pagination.value.rowsNumber = totalOrders.value
 
   } catch (err) {
@@ -290,14 +293,17 @@ const loadOrders = async () => {
   }
 }
 
+// ✅ Handler per la paginazione server-side
 const onRequest = (props) => {
   const { page, rowsPerPage, sortBy, descending } = props.pagination
 
+  // Aggiorna i valori della paginazione
   pagination.value.page = page
   pagination.value.rowsPerPage = rowsPerPage
   pagination.value.sortBy = sortBy
   pagination.value.descending = descending
 
+  // Ricarica i dati
   loadOrders()
 }
 
@@ -356,13 +362,21 @@ const getStatusColor = (status) => {
 }
 
 const getClientName = (clientId) => {
-  // TODO: implementare lookup clienti
-  return clientId?.lastname || 'N/A'
+  if (!clientId) return 'N/A'
+  const parts = []
+  if (clientId.firstname) parts.push(clientId.firstname)
+  if (clientId.lastname) parts.push(clientId.lastname)
+  if (parts.length > 0) return parts.join(' ')
+  if (clientId.company) return clientId.company
+  return 'N/A'
 }
 
 const getAgentName = (agentId) => {
-  // TODO: implementare lookup agenti
-  return agentId?.lastname || 'N/A'
+  if (!agentId) return 'N/A'
+  const parts = []
+  if (agentId.firstname) parts.push(agentId.firstname)
+  if (agentId.lastname) parts.push(agentId.lastname)
+  return parts.length > 0 ? parts.join(' ') : 'N/A'
 }
 
 // Handler menu laterale
@@ -393,7 +407,7 @@ onMounted(() => {
 
 .sidebar {
   width: 160px;
-  background: $bg-card;
+  background: $contrast;
   border-right: 1px solid $border;
   padding: 16px 8px;
   display: flex;
@@ -414,7 +428,6 @@ onMounted(() => {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  
 }
 
 .filters-section {
@@ -422,7 +435,7 @@ onMounted(() => {
 }
 
 .filters-card {
-  background: $bg-card;
+  background: $contrast;
   border-radius: 8px;
 }
 
@@ -444,10 +457,6 @@ onMounted(() => {
 
     &:hover {
       background-color: rgba($primary, 0.05);
-    }
-
-    &.selected {
-      background-color: rgba($primary, 0.1);
     }
   }
 
