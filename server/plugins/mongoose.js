@@ -1,21 +1,30 @@
 import mongoose from 'mongoose'
-export default defineNitroPlugin(async nitroApp =>{
-    const config = useRuntimeConfig();
 
-    if (!config.mongodbUri) {
-      console.error("❌ MONGODB_URI non configurato in runtimeConfig!");
-      return;
-    }
+export default defineNitroPlugin(async () => {
+  const { mongodbUri } = useRuntimeConfig()
 
-    try {
-      await mongoose.connect(config.mongodbUri,{
-        serverSelectionTimeoutMS: 5000,
-        socketTimeoutMS: 45000,
-      })
-      
-    } catch (error) {
-      console.error("❌ Errore connessione MongoDB:", error.message);
-    }
-  
+  if (!mongodbUri) {
+    console.error('❌ mongodbUri non configurato in runtimeConfig!')
+    return
+  }
 
+  if (mongoose.connection.readyState === 1) return // già connesso
+
+
+  try {
+    await mongoose.connect(mongodbUri, {
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    })
+
+    //registra i modelli
+    await import('~~/server/models/Client')
+    await import('~~/server/models/Agent')
+    await import('~~/server/models/Product')
+    await import('~~/server/models/Order')
+
+    console.log('✅ MongoDB connesso')
+  } catch (err) {
+    console.error('❌ Errore connessione MongoDB:', err.message)
+  }
 })

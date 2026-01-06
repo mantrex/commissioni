@@ -117,4 +117,4 @@ orderSchema.index({ date: -1 })
 orderSchema.index({ dueDate: 1 })
 orderSchema.index({ dueDate: 1, status: 1 }) // Per scaduti
 
-export default mongoose.model('Order', orderSchema)
+export default mongoose.models.Order || mongoose.model('Order', orderSchema)

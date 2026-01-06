@@ -1,3 +1,9 @@
+
+
+<template>
+<Main />
+</template>
+
 <script setup>
 import { useAuthStore } from '~/stores/auth'
 
@@ -5,11 +11,6 @@ const authStore = useAuthStore()
 
 // Il middleware gestisce già l'autenticazione
 </script>
-
-<template>
-
-</template>
-
 <style scoped lang="scss">
 .dashboard-container {
   padding: 24px;

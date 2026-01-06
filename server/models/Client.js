@@ -64,4 +64,4 @@ clientSchema.index({ lastname: 1, firstname: 1 })
 clientSchema.index({ company: 1 })
 clientSchema.index({ vip: 1 })
 
-export default mongoose.model('Client', clientSchema)
+export default mongoose.models.Client || mongoose.model('Client', clientSchema)

@@ -15,7 +15,9 @@ export default defineNuxtConfig({
     mongodbUri: process.env.MONGODB_URI,
     adminPassword: process.env.ADMIN_PASSWORD,
     sessionSecret: process.env.SESSION_SECRET,
-    public: {},
+    public: {
+      expiredDays: parseInt(process.env.EXPIRED) || 30
+    },
   },
 
   modules: ["@nuxt/fonts", "nuxt-quasar-ui", "@pinia/nuxt", "pinia-plugin-persistedstate"],
