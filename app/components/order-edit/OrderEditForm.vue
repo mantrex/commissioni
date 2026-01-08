@@ -20,7 +20,7 @@
         <div class="top-section">
           <ClientSection v-model:client="orderData.client" @edit-client="handleEditClient" />
 
-          <OrderDataSection v-model:data="orderData.orderData" />
+          <OrderDataSection v-model:data="orderData.orderData" @edit-agent="handleEditAgent" />
         </div>
 
         <!-- Sezione Corrieri + Note + Finanziari -->
@@ -44,6 +44,12 @@
       :custom-style="'min-width: 200px; width: 800px; max-width: 1000px'"
       :title="dialogs.item.isNew ? 'Nuovo Articolo' : 'Modifica Articolo'" :component-name="ItemDialog"
       :component-props="{ item: dialogs.item.data }" @close="handleItemDialogClose" />
+
+    <!-- Dialog Agente -->
+    <ComponentDialog v-model="dialogs.agent.show" :side="true"
+      :custom-style="'min-width: 200px; width: 600px; max-width: 800px'"
+      :title="dialogs.agent.isNew ? 'Nuovo Agente' : 'Modifica Agente'" :component-name="AgentDialog"
+      :component-props="{ agent: dialogs.agent.data }" @close="handleAgentDialogClose" />
   </q-page>
 </template>
 
@@ -58,6 +64,7 @@ import ShipmentsNotesSection from './ShipmentsNotesSection.vue'
 import ItemsSection from './ItemsSection.vue'
 import ClientDialog from './ClientDialog.vue'
 import ItemDialog from './ItemDialog.vue'
+import AgentDialog from './AgentDialog.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -101,6 +108,11 @@ const dialogs = reactive({
     isNew: false,
     data: null,
     index: null
+  },
+  agent: {
+    show: false,
+    isNew: false,
+    data: null
   }
 })
 
@@ -225,6 +237,26 @@ const handleRemoveItem = (index) => {
   }).onOk(() => {
     orderData.items.splice(index, 1)
   })
+}
+
+const handleEditAgent = () => {
+  dialogs.agent.isNew = true
+  dialogs.agent.data = {}
+  dialogs.agent.show = true
+}
+
+const handleAgentDialogClose = (savedAgent) => {
+  if (savedAgent) {
+    // Aggiorna agentId con il nuovo agente (o esistente modificato)
+    orderData.orderData.agentId = savedAgent._id
+
+    $q.notify({
+      type: 'positive',
+      message: 'Agente aggiornato',
+      timeout: 1500
+    })
+  }
+  dialogs.agent.show = false
 }
 
 // Mount

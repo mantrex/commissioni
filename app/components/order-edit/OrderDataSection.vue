@@ -40,12 +40,19 @@
 
         <!-- Agente -->
         <div class="col-12 col-sm-6">
-          <q-select v-model="localData.agentId" :options="agentOptions" label="Agente" option-label="label"
-            option-value="value" emit-value map-options outlined dense clearable use-input @filter="filterAgents">
-            <template v-slot:prepend>
-              <q-icon name="person" />
-            </template>
-          </q-select>
+          <div class="agent-field-wrapper">
+            <q-select v-model="localData.agentId" :options="agentOptions" label="Agente" option-label="label"
+              option-value="value" emit-value map-options outlined dense clearable use-input @filter="filterAgents"
+              class="agent-select">
+              <template v-slot:prepend>
+                <q-icon name="person" />
+              </template>
+            </q-select>
+            <q-btn flat dense round icon="edit" size="sm" color="primary" @click="emit('editAgent')"
+              class="agent-edit-btn">
+              <q-tooltip>Gestisci Agenti</q-tooltip>
+            </q-btn>
+          </div>
         </div>
 
         <!-- Pos Pratica (Status) -->
@@ -73,7 +80,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['update:data'])
+const emit = defineEmits(['update:data', 'editAgent'])
 
 const localData = ref({ ...props.data })
 
@@ -164,5 +171,19 @@ onMounted(() => {
 
 .section-content {
   padding: 16px;
+}
+
+.agent-field-wrapper {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+
+  .agent-select {
+    flex: 1;
+  }
+
+  .agent-edit-btn {
+    margin-top: 4px;
+  }
 }
 </style>
