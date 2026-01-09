@@ -1,94 +1,104 @@
 <template>
   <q-card flat bordered class="items-section">
     <q-card-section class="section-header">
-      <div class="header-title">
+      <div class="header-left">
+        <!-- Icona collapse separata -->
+        <q-btn flat dense round :icon="collapsed ? 'expand_more' : 'expand_less'" size="sm"
+          @click="collapsed = !collapsed" class="collapse-btn">
+          <q-tooltip>{{ collapsed ? 'Espandi' : 'Comprimi' }}</q-tooltip>
+        </q-btn>
+
         <q-icon name="inventory_2" size="20px" />
         <span>Articoli</span>
+        <q-chip v-if="localItems.length > 0" dense color="primary" text-color="white" size="sm" class="q-ml-sm">
+          {{ localItems.length }}
+        </q-chip>
       </div>
+
       <q-btn color="primary" icon="add" label="Aggiungi" unelevated dense @click="emit('addItem')" />
     </q-card-section>
 
-    <q-separator />
+    <q-slide-transition>
+      <q-card-section v-show="!collapsed" class="section-content">
+        <q-table flat bordered :rows="localItems" :columns="columns" row-key="_id" class="items-table"
+          :rows-per-page-options="[0]" hide-pagination>
+          <!-- Colonna Quantità -->
+          <template v-slot:body-cell-quantity="props">
+            <q-td :props="props">
+              <q-input v-model.number="props.row.quantity" type="number" dense borderless min="0"
+                class="quantity-input" />
+            </q-td>
+          </template>
 
-    <q-card-section class="section-content">
-      <q-table flat bordered :rows="localItems" :columns="columns" row-key="_id" class="items-table"
-        :rows-per-page-options="[0]" hide-pagination>
-        <!-- Colonna Quantità -->
-        <template v-slot:body-cell-quantity="props">
-          <q-td :props="props">
-            <q-input v-model.number="props.row.quantity" type="number" dense borderless min="0"
-              class="quantity-input" />
-          </q-td>
-        </template>
+          <!-- Colonna Codice Articolo -->
+          <template v-slot:body-cell-code="props">
+            <q-td :props="props">
+              {{ props.row.productId?.code || props.row.code || '' }}
+            </q-td>
+          </template>
 
-        <!-- Colonna Codice Articolo -->
-        <template v-slot:body-cell-code="props">
-          <q-td :props="props">
-            {{ props.row.productId?.code || props.row.code || '' }}
-          </q-td>
-        </template>
+          <!-- Colonna Descrizione -->
+          <template v-slot:body-cell-description="props">
+            <q-td :props="props">
+              {{ props.row.productId?.name || props.row.description || '' }}
+            </q-td>
+          </template>
 
-        <!-- Colonna Descrizione -->
-        <template v-slot:body-cell-description="props">
-          <q-td :props="props">
-            {{ props.row.productId?.name || props.row.description || '' }}
-          </q-td>
-        </template>
+          <!-- Colonna Pronto -->
+          <template v-slot:body-cell-ready="props">
+            <q-td :props="props" class="text-center">
+              <q-checkbox v-model="props.row.ready" dense />
+            </q-td>
+          </template>
 
-        <!-- Colonna Pronto -->
-        <template v-slot:body-cell-ready="props">
-          <q-td :props="props" class="text-center">
-            <q-checkbox v-model="props.row.ready" dense />
-          </q-td>
-        </template>
+          <!-- Colonna Ordinato -->
+          <template v-slot:body-cell-ordered="props">
+            <q-td :props="props" class="text-center">
+              <q-checkbox v-model="props.row.ordered" dense />
+            </q-td>
+          </template>
 
-        <!-- Colonna Ordinato -->
-        <template v-slot:body-cell-ordered="props">
-          <q-td :props="props" class="text-center">
-            <q-checkbox v-model="props.row.ordered" dense />
-          </q-td>
-        </template>
+          <!-- Colonna Nota -->
+          <template v-slot:body-cell-note="props">
+            <q-td :props="props">
+              <q-input v-model="props.row.note" dense borderless placeholder="Nota..." class="note-input" />
+            </q-td>
+          </template>
 
-        <!-- Colonna Nota -->
-        <template v-slot:body-cell-note="props">
-          <q-td :props="props">
-            <q-input v-model="props.row.note" dense borderless placeholder="Nota..." class="note-input" />
-          </q-td>
-        </template>
+          <!-- Colonna Fatturato -->
+          <template v-slot:body-cell-invoiced="props">
+            <q-td :props="props" class="text-center">
+              <q-select v-model.number="props.row.invoiced" :options="invoicedOptions" dense borderless
+                class="invoiced-select" />
+            </q-td>
+          </template>
 
-        <!-- Colonna Fatturato -->
-        <template v-slot:body-cell-invoiced="props">
-          <q-td :props="props" class="text-center">
-            <q-select v-model.number="props.row.invoiced" :options="invoicedOptions" dense borderless
-              class="invoiced-select" />
-          </q-td>
-        </template>
+          <!-- Colonna Azioni -->
+          <template v-slot:body-cell-actions="props">
+            <q-td :props="props" class="text-center">
+              <q-btn flat dense round icon="edit" size="sm" color="primary"
+                @click="emit('editItem', props.row, props.rowIndex)">
+                <q-tooltip>Modifica</q-tooltip>
+              </q-btn>
+              <q-btn flat dense round icon="delete" size="sm" color="negative"
+                @click="emit('removeItem', props.rowIndex)">
+                <q-tooltip>Rimuovi</q-tooltip>
+              </q-btn>
+            </q-td>
+          </template>
 
-        <!-- Colonna Azioni -->
-        <template v-slot:body-cell-actions="props">
-          <q-td :props="props" class="text-center">
-            <q-btn flat dense round icon="edit" size="sm" color="primary"
-              @click="emit('editItem', props.row, props.rowIndex)">
-              <q-tooltip>Modifica</q-tooltip>
-            </q-btn>
-            <q-btn flat dense round icon="delete" size="sm" color="negative"
-              @click="emit('removeItem', props.rowIndex)">
-              <q-tooltip>Rimuovi</q-tooltip>
-            </q-btn>
-          </q-td>
-        </template>
-
-        <!-- Nessun articolo -->
-        <template v-slot:no-data>
-          <div class="full-width row flex-center q-gutter-sm q-pa-lg">
-            <q-icon size="2em" name="inventory_2" color="grey-5" />
-            <span class="text-grey-7">
-              Nessun articolo. Clicca "Aggiungi" per inserirne uno.
-            </span>
-          </div>
-        </template>
-      </q-table>
-    </q-card-section>
+          <!-- Nessun articolo -->
+          <template v-slot:no-data>
+            <div class="full-width row flex-center q-gutter-sm q-pa-lg">
+              <q-icon size="2em" name="inventory_2" color="grey-5" />
+              <span class="text-grey-7">
+                Nessun articolo. Clicca "Aggiungi" per inserirne uno.
+              </span>
+            </div>
+          </template>
+        </q-table>
+      </q-card-section>
+    </q-slide-transition>
   </q-card>
 </template>
 
@@ -104,6 +114,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update:items', 'addItem', 'editItem', 'removeItem'])
 
+const collapsed = ref(false)
 const localItems = ref([...props.items])
 
 // Opzioni per campo "Fatturato"
@@ -173,7 +184,8 @@ const columns = [
   }
 ]
 
-// Watch
+// ⚠️ TEMP DISABLED - Watch causano loop ricorsivo
+/*
 watch(() => props.items, (newVal) => {
   localItems.value = [...newVal]
 }, { deep: true })
@@ -181,6 +193,7 @@ watch(() => props.items, (newVal) => {
 watch(localItems, (newVal) => {
   emit('update:items', newVal)
 }, { deep: true })
+*/
 </script>
 
 <style scoped lang="scss">
@@ -195,12 +208,16 @@ watch(localItems, (newVal) => {
   padding: 12px 16px;
   background: $bg-light;
 
-  .header-title {
+  .header-left {
     display: flex;
     align-items: center;
     gap: 8px;
     font-weight: 600;
     color: $text-primary;
+  }
+
+  .collapse-btn {
+    margin-right: 4px;
   }
 }
 

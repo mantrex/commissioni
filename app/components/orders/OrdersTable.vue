@@ -29,10 +29,11 @@
         </q-td>
       </template>
 
-      <!-- Colonna VIP -->
+      <!-- Colonna VIP - FIX: controllo esplicito === true -->
       <template v-slot:body-cell-vip="props">
         <q-td :props="props" class="text-center">
-          <q-icon v-if="props.row.clientId?.vip" name="star" color="warning" size="sm" />
+          <q-icon v-if="props.row.clientId?.vip === true" name="star" color="warning" size="sm" />
+          <span v-else class="text-grey-5">—</span>
         </q-td>
       </template>
 

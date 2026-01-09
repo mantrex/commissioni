@@ -4,8 +4,11 @@ export default defineEventHandler(async (event) => {
   try {
     const body = await readBody(event)
 
-    // Validazioni
-    if (!body.lastname && !body.company) {
+    // FIX: Validazione - almeno cognome O ditta devono essere presenti
+    const hasLastname = body.lastname && body.lastname.trim()
+    const hasCompany = body.company && body.company.trim()
+
+    if (!hasLastname && !hasCompany) {
       throw createError({
         statusCode: 400,
         message: 'Cognome o Ditta obbligatori'

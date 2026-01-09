@@ -33,10 +33,10 @@
       <div class="form-section">
         <div class="section-title">Dati Anagrafici</div>
 
+        <!-- FIX: Cognome e Nome non più obbligatori -->
         <div class="row q-col-gutter-sm">
           <div class="col-12 col-sm-6">
-            <q-input v-model="localClient.lastname" label="Cognome *" outlined dense
-              :rules="[val => !!val || 'Campo obbligatorio']" />
+            <q-input v-model="localClient.lastname" label="Cognome" outlined dense />
           </div>
           <div class="col-12 col-sm-6">
             <q-input v-model="localClient.firstname" label="Nome" outlined dense />
@@ -131,13 +131,27 @@ const loadClients = async () => {
   try {
     const { data } = await useFetch('/api/clients')
     if (data.value) {
-      allClients.value = data.value.clients.map(c => ({
-        label: `${c.lastname || ''} ${c.firstname || ''}`.trim() || c.company || 'N/A',
-        caption: c.city && c.state ? `${c.city}, ${c.state}` : (c.city || c.state || ''),
-        value: c._id,
-        client: c,
-        isNew: false
-      }))
+      allClients.value = data.value.clients.map(c => {
+        // Costruisci label: priorità a cognome+nome, poi ditta, poi "N/A"
+        let label = ''
+        const fullName = `${c.lastname || ''} ${c.firstname || ''}`.trim()
+
+        if (fullName) {
+          label = fullName
+        } else if (c.company) {
+          label = c.company
+        } else {
+          label = 'N/A'
+        }
+
+        return {
+          label,
+          caption: c.city && c.state ? `${c.city}, ${c.state}` : (c.city || c.state || ''),
+          value: c._id,
+          client: c,
+          isNew: false
+        }
+      })
 
       clientOptions.value = [
         { label: '➕ Crea nuovo cliente', value: 'new', isNew: true },
@@ -165,7 +179,8 @@ const filterClients = (val, update) => {
     const needle = val.toLowerCase()
     const filtered = allClients.value.filter(
       c => c.label.toLowerCase().indexOf(needle) > -1 ||
-        (c.caption && c.caption.toLowerCase().indexOf(needle) > -1)
+        (c.caption && c.caption.toLowerCase().indexOf(needle) > -1) ||
+        (c.client.company && c.client.company.toLowerCase().indexOf(needle) > -1)
     )
     clientOptions.value = [
       { label: '➕ Crea nuovo cliente', value: 'new', isNew: true },
@@ -191,12 +206,15 @@ const handleClientSelect = (option) => {
   }
 }
 
-// Salva cliente
+// FIX: Validazione - almeno cognome O ditta devono essere presenti
 const handleSave = async () => {
-  if (!localClient.value.lastname) {
+  const hasLastname = localClient.value.lastname && localClient.value.lastname.trim()
+  const hasCompany = localClient.value.company && localClient.value.company.trim()
+
+  if (!hasLastname && !hasCompany) {
     $q.notify({
       type: 'negative',
-      message: 'Il cognome è obbligatorio'
+      message: 'Inserisci almeno il cognome o la ditta'
     })
     return
   }

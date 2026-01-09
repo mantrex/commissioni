@@ -1,90 +1,90 @@
 <template>
-  <q-card flat bordered class="client-section">
-    <q-card-section class="section-header">
-      <div class="header-title">
-        <q-icon name="person" size="20px" />
-        <span>Cliente</span>
-        <q-checkbox v-model="localClient.vip" label="VIP" dense class="q-ml-md" />
+  <div class="client-section-content">
+    <!-- Header interno solo con VIP e pulsante modifica -->
+    <div class="client-mini-header">
+      <div class="header-left">
+        <q-icon name="person" size="18px" />
+        <span class="section-label">Cliente</span>
+        <q-checkbox v-model="localClient.vip" label="VIP" dense class="q-ml-sm" />
       </div>
-      <q-btn flat dense round icon="edit" color="primary" @click="emit('editClient')">
+      <q-btn flat dense round icon="edit" size="sm" color="primary" @click="emit('editClient')">
         <q-tooltip>Modifica Cliente</q-tooltip>
       </q-btn>
-    </q-card-section>
+    </div>
 
-    <q-separator />
+    <!-- Autocomplete Cliente -->
+    <div class="client-autocomplete">
+      <q-select v-model="selectedClientOption" :options="clientOptions" option-label="label" option-value="value"
+        label="Cerca o aggiungi cliente" outlined dense use-input clearable @filter="filterClients"
+        @update:model-value="handleClientSelect">
+        <template v-slot:prepend>
+          <q-icon name="search" />
+        </template>
 
-    <q-card-section class="section-content">
-      <!-- Autocomplete Cliente -->
-      <div class="client-autocomplete">
-        <q-select v-model="selectedClientOption" :options="clientOptions" option-label="label" option-value="value"
-          label="Cerca o aggiungi cliente" outlined dense use-input clearable @filter="filterClients"
-          @update:model-value="handleClientSelect">
-          <template v-slot:prepend>
-            <q-icon name="search" />
-          </template>
+        <template v-slot:option="scope">
+          <q-item v-bind="scope.itemProps">
+            <q-item-section avatar v-if="scope.opt.isNew">
+              <q-icon name="add_circle" color="primary" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>{{ scope.opt.label }}</q-item-label>
+              <q-item-label caption v-if="scope.opt.caption">
+                {{ scope.opt.caption }}
+              </q-item-label>
+            </q-item-section>
+          </q-item>
+        </template>
+      </q-select>
+    </div>
 
-          <template v-slot:option="scope">
-            <q-item v-bind="scope.itemProps">
-              <q-item-section avatar v-if="scope.opt.isNew">
-                <q-icon name="add_circle" color="primary" />
-              </q-item-section>
-              <q-item-section>
-                <q-item-label>{{ scope.opt.label }}</q-item-label>
-                <q-item-label caption v-if="scope.opt.caption">
-                  {{ scope.opt.caption }}
-                </q-item-label>
-              </q-item-section>
-            </q-item>
-          </template>
-        </q-select>
-      </div>
-
-      <!-- Dati Cliente (read-only quando selezionato) -->
-      <div class="client-data" v-if="localClient._id || showEmptyForm">
-        <div class="row q-col-gutter-sm">
-          <div class="col-6">
-            <q-input v-model="localClient.lastname" label="Cognome" outlined dense readonly />
-          </div>
-          <div class="col-6">
-            <q-input v-model="localClient.firstname" label="Nome" outlined dense readonly />
-          </div>
+    <!-- Dati Cliente (read-only quando selezionato) -->
+    <div class="client-data" v-if="localClient._id || showEmptyForm">
+      <div class="row q-col-gutter-sm">
+        <div class="col-6">
+          <q-input v-model="localClient.lastname" label="Cognome" outlined dense readonly />
         </div>
-
-        <q-input v-model="localClient.address" label="Indirizzo" outlined dense readonly class="q-mt-sm" />
-
-        <div class="row q-col-gutter-sm q-mt-sm">
-          <div class="col-4">
-            <q-input v-model="localClient.cap" label="CAP" outlined dense readonly />
-          </div>
-          <div class="col-8">
-            <q-input v-model="localClient.city" label="Città" outlined dense readonly />
-          </div>
-        </div>
-
-        <div class="row q-col-gutter-sm q-mt-sm">
-          <div class="col-6">
-            <q-input v-model="localClient.state" label="Paese" outlined dense readonly />
-          </div>
-          <div class="col-6">
-            <q-input v-model="localClient.tel" label="Telefono" outlined dense readonly />
-          </div>
-        </div>
-
-        <div class="row q-col-gutter-sm q-mt-sm">
-          <div class="col-6">
-            <q-input v-model="localClient.email" label="Email" outlined dense readonly />
-          </div>
-          <div class="col-6">
-            <q-input v-model="localClient.piva" label="P.IVA" outlined dense readonly />
-          </div>
+        <div class="col-6">
+          <q-input v-model="localClient.firstname" label="Nome" outlined dense readonly />
         </div>
       </div>
-    </q-card-section>
-  </q-card>
+
+      <!-- Campo Ditta -->
+      <q-input v-model="localClient.company" label="Ditta" outlined dense readonly class="q-mt-sm" />
+
+      <q-input v-model="localClient.address" label="Indirizzo" outlined dense readonly class="q-mt-sm" />
+
+      <div class="row q-col-gutter-sm q-mt-sm">
+        <div class="col-4">
+          <q-input v-model="localClient.cap" label="CAP" outlined dense readonly />
+        </div>
+        <div class="col-8">
+          <q-input v-model="localClient.city" label="Città" outlined dense readonly />
+        </div>
+      </div>
+
+      <div class="row q-col-gutter-sm q-mt-sm">
+        <div class="col-6">
+          <q-input v-model="localClient.state" label="Paese" outlined dense readonly />
+        </div>
+        <div class="col-6">
+          <q-input v-model="localClient.tel" label="Telefono" outlined dense readonly />
+        </div>
+      </div>
+
+      <div class="row q-col-gutter-sm q-mt-sm">
+        <div class="col-6">
+          <q-input v-model="localClient.email" label="Email" outlined dense readonly />
+        </div>
+        <div class="col-6">
+          <q-input v-model="localClient.piva" label="P.IVA" outlined dense readonly />
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 
 const props = defineProps({
   client: {
@@ -95,7 +95,12 @@ const props = defineProps({
 
 const emit = defineEmits(['update:client', 'editClient'])
 
-const localClient = ref(props.client || {})
+// ✅ FIX: Usa computed con getter/setter invece di ref + watch
+const localClient = computed({
+  get: () => props.client || {},
+  set: (val) => emit('update:client', val)
+})
+
 const selectedClientOption = ref(null)
 const allClients = ref([])
 const clientOptions = ref([])
@@ -106,13 +111,26 @@ const loadClients = async () => {
   try {
     const { data } = await useFetch('/api/clients')
     if (data.value) {
-      allClients.value = data.value.clients.map(c => ({
-        label: `${c.lastname || ''} ${c.firstname || ''}`.trim() || c.company || 'N/A',
-        caption: c.city && c.state ? `${c.city}, ${c.state}` : (c.city || c.state || ''),
-        value: c._id,
-        client: c,
-        isNew: false
-      }))
+      allClients.value = data.value.clients.map(c => {
+        let label = ''
+        const fullName = `${c.lastname || ''} ${c.firstname || ''}`.trim()
+
+        if (fullName) {
+          label = fullName
+        } else if (c.company) {
+          label = c.company
+        } else {
+          label = 'N/A'
+        }
+
+        return {
+          label,
+          caption: c.city && c.state ? `${c.city}, ${c.state}` : (c.city || c.state || ''),
+          value: c._id,
+          client: c,
+          isNew: false
+        }
+      })
 
       clientOptions.value = [
         { label: '➕ Crea nuovo cliente', value: 'new', isNew: true },
@@ -140,7 +158,8 @@ const filterClients = (val, update) => {
     const needle = val.toLowerCase()
     const filtered = allClients.value.filter(
       c => c.label.toLowerCase().indexOf(needle) > -1 ||
-        (c.caption && c.caption.toLowerCase().indexOf(needle) > -1)
+        (c.caption && c.caption.toLowerCase().indexOf(needle) > -1) ||
+        (c.client.company && c.client.company.toLowerCase().indexOf(needle) > -1)
     )
     clientOptions.value = [
       { label: '➕ Crea nuovo cliente', value: 'new', isNew: true },
@@ -158,63 +177,53 @@ const handleClientSelect = (option) => {
   }
 
   if (option.isNew) {
-    // Crea nuovo cliente
     emit('editClient')
     selectedClientOption.value = null
   } else {
-    // Carica cliente esistente
     localClient.value = { ...option.client }
     showEmptyForm.value = false
   }
 }
-
-// Watch per sincronizzare con parent
-watch(() => props.client, (newVal) => {
-  if (newVal) {
-    localClient.value = { ...newVal }
-  }
-}, { deep: true })
-
-watch(localClient, (newVal) => {
-  emit('update:client', newVal)
-}, { deep: true })
 
 // Load on mount
 loadClients()
 </script>
 
 <style scoped lang="scss">
-.client-section {
-  background: $contrast;
+.client-section-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.section-header {
+.client-mini-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
-  background: $bg-light;
+  padding: 8px 12px;
+  background: rgba($primary, 0.05);
+  border-radius: 4px;
 
-  .header-title {
+  .header-left {
     display: flex;
     align-items: center;
     gap: 8px;
+  }
+
+  .section-label {
     font-weight: 600;
     color: $text-primary;
+    font-size: 14px;
   }
 }
 
-.section-content {
-  padding: 16px;
-}
-
 .client-autocomplete {
-  margin-bottom: 16px;
+  // nessuno stile particolare
 }
 
 .client-data {
-  padding: 16px;
+  padding: 12px;
   background: $bg-light;
-  border-radius: 8px;
+  border-radius: 4px;
 }
 </style>

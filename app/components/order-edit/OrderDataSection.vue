@@ -1,76 +1,70 @@
 <template>
-  <q-card flat bordered class="order-data-section">
-    <q-card-section class="section-header">
-      <div class="header-title">
-        <q-icon name="assignment" size="20px" />
-        <span>Dati Ordine</span>
+  <div class="order-data-content">
+    <!-- Header interno -->
+    <div class="data-mini-header">
+      <q-icon name="assignment" size="18px" />
+      <span class="section-label">Dati Ordine</span>
+    </div>
+
+    <div class="row q-col-gutter-sm">
+      <!-- Numero Commissione -->
+      <div class="col-12 col-sm-6">
+        <q-input v-model="commNum" label="Comm. n." outlined dense readonly :bg-color="'grey-3'">
+          <template v-slot:prepend>
+            <q-icon name="tag" />
+          </template>
+        </q-input>
       </div>
-    </q-card-section>
 
-    <q-separator />
+      <!-- Data -->
+      <div class="col-12 col-sm-6">
+        <q-input v-model="date" label="Data" type="date" outlined dense>
+          <template v-slot:prepend>
+            <q-icon name="event" />
+          </template>
+        </q-input>
+      </div>
 
-    <q-card-section class="section-content">
-      <div class="row q-col-gutter-sm">
-        <!-- Numero Commissione -->
-        <div class="col-12 col-sm-6">
-          <q-input v-model="localData.commNum" label="Comm. n." outlined dense readonly :bg-color="'grey-3'">
+      <!-- Scadenza -->
+      <div class="col-12 col-sm-6">
+        <q-input v-model="dueDate" label="Scad" type="date" outlined dense>
+          <template v-slot:prepend>
+            <q-icon name="event_available" />
+          </template>
+        </q-input>
+      </div>
+
+      <!-- Agente -->
+      <div class="col-12 col-sm-6">
+        <div class="agent-field-wrapper">
+          <q-select v-model="agentId" :options="agentOptions" label="Agente" option-label="label" option-value="value"
+            emit-value map-options outlined dense clearable use-input @filter="filterAgents" class="agent-select">
             <template v-slot:prepend>
-              <q-icon name="tag" />
-            </template>
-          </q-input>
-        </div>
-
-        <!-- Data -->
-        <div class="col-12 col-sm-6">
-          <q-input v-model="localData.date" label="Data" type="date" outlined dense>
-            <template v-slot:prepend>
-              <q-icon name="event" />
-            </template>
-          </q-input>
-        </div>
-
-        <!-- Scadenza -->
-        <div class="col-12 col-sm-6">
-          <q-input v-model="localData.dueDate" label="Scad" type="date" outlined dense>
-            <template v-slot:prepend>
-              <q-icon name="event_available" />
-            </template>
-          </q-input>
-        </div>
-
-        <!-- Agente -->
-        <div class="col-12 col-sm-6">
-          <div class="agent-field-wrapper">
-            <q-select v-model="localData.agentId" :options="agentOptions" label="Agente" option-label="label"
-              option-value="value" emit-value map-options outlined dense clearable use-input @filter="filterAgents"
-              class="agent-select">
-              <template v-slot:prepend>
-                <q-icon name="person" />
-              </template>
-            </q-select>
-            <q-btn flat dense round icon="edit" size="sm" color="primary" @click="emit('editAgent')"
-              class="agent-edit-btn">
-              <q-tooltip>Gestisci Agenti</q-tooltip>
-            </q-btn>
-          </div>
-        </div>
-
-        <!-- Pos Pratica (Status) -->
-        <div class="col-12">
-          <q-select v-model="localData.status" :options="statusOptions" label="Pos Pratica" option-label="label"
-            option-value="value" emit-value map-options outlined dense use-input @filter="filterStatuses">
-            <template v-slot:prepend>
-              <q-icon name="flag" />
+              <q-icon name="person" />
             </template>
           </q-select>
+          <q-btn flat dense round icon="edit" size="sm" color="primary" @click="emit('editAgent')"
+            class="agent-edit-btn">
+            <q-tooltip>Gestisci Agenti</q-tooltip>
+          </q-btn>
         </div>
       </div>
-    </q-card-section>
-  </q-card>
+
+      <!-- Pos Pratica (Status) -->
+      <div class="col-12">
+        <q-select v-model="status" :options="statusOptions" label="Pos Pratica" option-label="label"
+          option-value="value" emit-value map-options outlined dense use-input @filter="filterStatuses">
+          <template v-slot:prepend>
+            <q-icon name="flag" />
+          </template>
+        </q-select>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { getSelectableStatuses } from '~~/utils/statuses'
 
 const props = defineProps({
@@ -82,7 +76,31 @@ const props = defineProps({
 
 const emit = defineEmits(['update:data', 'editAgent'])
 
-const localData = ref({ ...props.data })
+// Uso computed getter/setter per evitare loop ricorsivi
+const commNum = computed({
+  get: () => props.data.commNum,
+  set: (val) => emit('update:data', { ...props.data, commNum: val })
+})
+
+const date = computed({
+  get: () => props.data.date,
+  set: (val) => emit('update:data', { ...props.data, date: val })
+})
+
+const dueDate = computed({
+  get: () => props.data.dueDate,
+  set: (val) => emit('update:data', { ...props.data, dueDate: val })
+})
+
+const agentId = computed({
+  get: () => props.data.agentId,
+  set: (val) => emit('update:data', { ...props.data, agentId: val })
+})
+
+const status = computed({
+  get: () => props.data.status,
+  set: (val) => emit('update:data', { ...props.data, status: val })
+})
 
 // Stati
 const allStatuses = ref(getSelectableStatuses())
@@ -136,15 +154,6 @@ const filterAgents = (val, update) => {
   })
 }
 
-// Watch
-watch(() => props.data, (newVal) => {
-  localData.value = { ...newVal }
-}, { deep: true })
-
-watch(localData, (newVal) => {
-  emit('update:data', newVal)
-}, { deep: true })
-
 // Mount
 onMounted(() => {
   loadAgents()
@@ -152,25 +161,25 @@ onMounted(() => {
 </script>
 
 <style scoped lang="scss">
-.order-data-section {
-  background: $contrast;
+.order-data-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.section-header {
-  padding: 12px 16px;
-  background: $bg-light;
+.data-mini-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba($primary, 0.05);
+  border-radius: 4px;
 
-  .header-title {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+  .section-label {
     font-weight: 600;
     color: $text-primary;
+    font-size: 14px;
   }
-}
-
-.section-content {
-  padding: 16px;
 }
 
 .agent-field-wrapper {

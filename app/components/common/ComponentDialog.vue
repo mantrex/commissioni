@@ -1,6 +1,6 @@
 <template>
   <q-dialog v-model="internalVisibleState" :maximized="maximized" :position="side ? 'right' : 'standard'"
-    :full-height="side" :full-width="isSmallScreen" @hide="onHide">
+    :full-height="side" :full-width="isSmallScreen" @hide="onHide" :seamless="side" class="component-dialog">
     <q-card :class="['dialog-card', { 'side-dialog': side }]" :style="cardStyle">
       <q-bar class="dialog-header">
         <div class="dialog-title">{{ title }}</div>
@@ -10,7 +10,7 @@
         </q-btn>
       </q-bar>
 
-      <q-card-section class="dialog-content">
+      <q-card-section class="dialog-content q-pa-none">
         <component :is="componentName" v-bind="componentProps" @close="closeDialog" />
       </q-card-section>
     </q-card>
@@ -106,7 +106,7 @@ const closeDialog = () => {
 
 <style scoped lang="scss">
 .dialog-card {
-  max-height: 100vh;
+  height: 100vh;
 }
 
 .side-dialog {
@@ -114,8 +114,9 @@ const closeDialog = () => {
 }
 
 .dialog-header {
-  background-color: $header;
+  background-color: $modal-header;
   color: $contrast;
+  flex-shrink: 0;
 }
 
 .dialog-title {
@@ -124,11 +125,20 @@ const closeDialog = () => {
 }
 
 .dialog-content {
-  max-height: calc(100vh - 50px);
+  height: calc(100vh - 50px);
   overflow-y: auto;
 }
 
 :deep(.q-dialog__backdrop) {
   transition-duration: 300ms;
 }
+
+</style>
+
+<style>
+
+    .component-dialog .q-dialog__inner {
+      padding: 0;
+    }
+
 </style>

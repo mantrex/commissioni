@@ -16,18 +16,34 @@
 
       <!-- Griglia responsiva principale -->
       <div class="order-grid">
-        <!-- Sezione Cliente + Dati Ordine -->
-        <div class="top-section">
-          <ClientSection v-model:client="orderData.client" @edit-client="handleEditClient" />
+        <!-- ✅ SEZIONE CLIENTE + DATI ORDINE CON HEADER UNICO COLLASSABILE -->
+        <q-card flat bordered class="top-section-card">
+          <!-- Header unico collassabile -->
+          <q-card-section class="section-header">
+            <div class="header-left">
+              <q-btn flat dense round :icon="topSectionCollapsed ? 'expand_more' : 'expand_less'" size="sm"
+                @click="topSectionCollapsed = !topSectionCollapsed" class="collapse-btn">
+                <q-tooltip>{{ topSectionCollapsed ? 'Espandi' : 'Comprimi' }}</q-tooltip>
+              </q-btn>
+              <q-icon name="assignment" size="20px" />
+              <span>Cliente e Dati Ordine</span>
+            </div>
+          </q-card-section>
 
-          <OrderDataSection v-model:data="orderData.orderData" @edit-agent="handleEditAgent" />
-        </div>
+          <!-- Contenuto collassabile -->
+          <q-slide-transition>
+            <div v-show="!topSectionCollapsed" class="top-section">
+              <ClientSection v-model:client="orderData.client" @edit-client="handleEditClient" />
+              <OrderDataSection v-model:data="orderData.orderData" @edit-agent="handleEditAgent" />
+            </div>
+          </q-slide-transition>
+        </q-card>
 
-        <!-- Sezione Corrieri + Note + Finanziari -->
+        <!-- Sezione Corrieri + Note + Finanziari (collassabile separata) -->
         <ShipmentsNotesSection v-model:shipments="orderData.shipments" v-model:notes="orderData.notes"
           v-model:financial="orderData.financial" />
 
-        <!-- Sezione Articoli -->
+        <!-- Sezione Articoli (collassabile separata) -->
         <ItemsSection v-model:items="orderData.items" @add-item="handleAddItem" @edit-item="handleEditItem"
           @remove-item="handleRemoveItem" />
       </div>
@@ -73,6 +89,9 @@ const $q = useQuasar()
 const orderId = route.params.id
 const isNew = !orderId || orderId === 'new'
 const saving = ref(false)
+
+// ✅ Stato per collassare la sezione top (Cliente + Dati Ordine)
+const topSectionCollapsed = ref(false)
 
 // Dati ordine
 const orderData = reactive({
@@ -127,8 +146,31 @@ const loadOrder = async () => {
       throw new Error(error.value.message)
     }
 
-    // Popola i dati
-    Object.assign(orderData, data.value.order)
+    // ✅ FIX: Assegna proprietà individualmente per evitare loop ricorsivi
+    const order = data.value.order
+
+    orderData.commNum = order.commNum || ''
+    orderData.client = order.clientId || null
+
+    // Dati ordine
+    orderData.orderData.date = order.date || new Date().toISOString().split('T')[0]
+    orderData.orderData.dueDate = order.dueDate || null
+    orderData.orderData.agentId = order.agentId?._id || null
+    orderData.orderData.status = order.status || 'APERTA'
+
+    // Spedizioni e note
+    orderData.shipments = order.shipments || []
+    orderData.notes = order.notes || []
+
+    // Dati finanziari
+    orderData.financial.ca = order.ca || 0
+    orderData.financial.rd = order.rd || 0
+    orderData.financial.ric = order.ric || 0
+    orderData.financial.balance = order.balance || 0
+    orderData.financial.pay = order.pay || 0
+
+    // Articoli
+    orderData.items = order.items || []
 
   } catch (err) {
     $q.notify({
@@ -247,7 +289,6 @@ const handleEditAgent = () => {
 
 const handleAgentDialogClose = (savedAgent) => {
   if (savedAgent) {
-    // Aggiorna agentId con il nuovo agente (o esistente modificato)
     orderData.orderData.agentId = savedAgent._id
 
     $q.notify({
@@ -311,14 +352,43 @@ onMounted(() => {
   gap: 16px;
 }
 
+// ✅ Card per la sezione top
+.top-section-card {
+  background: $contrast;
+
+  .section-header {
+    padding: 12px 16px;
+    background: $bg-light;
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      color: $text-primary;
+    }
+
+    .collapse-btn {
+      margin-right: 4px;
+    }
+  }
+}
+
 .top-section {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
+  padding: 16px;
 
   @media (max-width: 1024px) {
     grid-template-columns: 1fr;
   }
+}
+
+// Rimuovo i bordi dalle sotto-sezioni
+.top-section :deep(.q-card) {
+  border: none;
+  box-shadow: none;
 }
 
 // Responsive
