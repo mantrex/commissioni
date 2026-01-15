@@ -284,15 +284,54 @@ const handleEditItem = (item, index) => {
 }
 
 const handleItemDialogClose = (savedItem) => {
-  if (savedItem) {
-    if (dialogs.item.isNew) {
-      orderData.items.push(savedItem)
-    } else {
-      orderData.items[dialogs.item.index] = savedItem
-    }
+  console.log('🔵 handleItemDialogClose chiamato')
+  console.log('📦 savedItem ricevuto:', savedItem)
+
+  if (!savedItem) {
+    console.log('⚠️ Nessun item da salvare')
+    dialogs.item.show = false
+    dialogs.item.data = null
+    dialogs.item.index = null
+    return
   }
+
+  if (dialogs.item.isNew) {
+    // ✅ NUOVO ITEM
+    console.log('➕ Aggiunta nuovo item')
+    orderData.items.push(savedItem)
+  } else {
+    // ✅ MODIFICA ITEM ESISTENTE
+    console.log('✏️ Modifica item all\'indice:', dialogs.item.index)
+    console.log('📊 Item PRIMA:', JSON.stringify(orderData.items[dialogs.item.index]))
+
+    // METODO 1: Splice (il più sicuro per la reattività)
+    orderData.items.splice(dialogs.item.index, 1, savedItem)
+
+    console.log('📊 Item DOPO:', JSON.stringify(orderData.items[dialogs.item.index]))
+  }
+
+  // ✅ FORZARE LA REATTIVITÀ: ricrea completamente l'array
+  console.log('🔄 Forzo aggiornamento reattività')
+  const itemsBackup = [...orderData.items]
+  orderData.items = []
+  nextTick(() => {
+    orderData.items = itemsBackup
+    console.log('✅ Items aggiornati, totale:', orderData.items.length)
+  })
+
+  // Notifica successo
+  $q.notify({
+    type: 'positive',
+    message: dialogs.item.isNew ? 'Articolo aggiunto' : 'Articolo modificato',
+    timeout: 1500
+  })
+
+  // Reset dialog state
   dialogs.item.show = false
+  dialogs.item.data = null
+  dialogs.item.index = null
 }
+
 
 const handleRemoveItem = (index) => {
   $q.dialog({

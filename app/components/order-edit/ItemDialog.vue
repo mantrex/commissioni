@@ -155,9 +155,9 @@ watch(() => props.item, (newVal) => {
 // Carica lista prodotti
 const loadProducts = async () => {
   try {
-    const { data } = await useFetch('/api/products')
-    if (data.value) {
-      allProducts.value = data.value.products.map(p => ({
+    const data = await $fetch('/api/products')
+    if (data && data.products) {
+      allProducts.value = data.products.map(p => ({
         label: p.code || p.name,
         caption: p.name,
         value: p._id,
@@ -224,7 +224,7 @@ const handleProductSelect = (option) => {
 }
 
 // Salva articolo
-const handleSave = () => {
+const handleSave = async () => {
   if (!localItem.value.description) {
     $q.notify({
       type: 'negative',
@@ -241,7 +241,89 @@ const handleSave = () => {
     return
   }
 
-  emit('close', localItem.value)
+  // ✅ Se non c'è productId ma c'è code o description, crea nuovo prodotto
+  if (!localItem.value.productId && (localItem.value.code || localItem.value.description)) {
+    try {
+      const data = await $fetch('/api/products', {
+        method: 'POST',
+        body: {
+          code: localItem.value.code || '',
+          name: localItem.value.description || '',
+          details: ''
+        }
+      })
+
+      // ✅ Usa direttamente i dati dalla risposta (data.product contiene già tutto)
+      localItem.value.productId = data.product._id
+      localItem.value.code = data.product.code || ''
+      localItem.value.description = data.product.name || ''
+
+      $q.notify({
+        type: 'positive',
+        message: 'Prodotto creato con successo'
+      })
+    } catch (err) {
+      $q.notify({
+        type: 'negative',
+        message: 'Errore creazione prodotto',
+        caption: err.message || err.data?.message || 'Errore sconosciuto'
+      })
+      return
+    }
+  }
+
+  // ✅ Se esiste productId e i dati sono cambiati, aggiorna il prodotto
+  if (localItem.value.productId && isEditMode.value) {
+    try {
+      const data = await $fetch(`/api/products/${localItem.value.productId}`, {
+        method: 'PUT',
+        body: {
+          code: localItem.value.code || '',
+          name: localItem.value.description || '',
+          details: ''
+        }
+      })
+
+      // ✅ Usa direttamente i dati dalla risposta
+      localItem.value.code = data.product.code || ''
+      localItem.value.description = data.product.name || ''
+
+      $q.notify({
+        type: 'positive',
+        message: 'Prodotto aggiornato con successo'
+      })
+    } catch (err) {
+      $q.notify({
+        type: 'negative',
+        message: 'Errore aggiornamento prodotto',
+        caption: err.message || err.data?.message || 'Errore sconosciuto'
+      })
+      return
+    }
+  }
+
+  // ✅ IMPORTANTE: Emetti TUTTI i campi dell'item, non solo productId
+  console.log('📤 Emetto item completo:', {
+    productId: localItem.value.productId,
+    code: localItem.value.code,
+    description: localItem.value.description,
+    quantity: localItem.value.quantity,
+    ready: localItem.value.ready,
+    ordered: localItem.value.ordered,
+    invoiced: localItem.value.invoiced,
+    note: localItem.value.note
+  })
+
+  emit('close', {
+    productId: localItem.value.productId,
+    code: localItem.value.code,
+    description: localItem.value.description,
+    quantity: localItem.value.quantity,
+    ready: localItem.value.ready,
+    ordered: localItem.value.ordered,
+    invoiced: localItem.value.invoiced,
+    note: localItem.value.note || ''
+  })
 }
 
 // Load on mount
