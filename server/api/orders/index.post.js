@@ -30,10 +30,13 @@ export default defineEventHandler(async (event) => {
       notes: (body.notes || []).filter(n => n.text),
       items: (body.items || []).map(item => ({
         productId: item.productId || null,
+        code: item.code || '',
+        description: item.description || '',
         quantity: item.quantity || 0,
         ready: item.ready || false,
         invoiced: item.invoiced || 0,
-        ordered: item.ordered || false
+        ordered: item.ordered || false,
+        note: item.note || ''
       })),
       ca: body.financial?.ca || 0,
       rd: body.financial?.rd || 0,
@@ -44,9 +47,16 @@ export default defineEventHandler(async (event) => {
 
     const order = await Order.create(orderData)
 
+    // ✅ POPULATE l'ordine prima di restituirlo
+    const populatedOrder = await Order.findById(order._id)
+      .populate('clientId', 'firstname lastname company address cap city region state tel fax email piva vip')
+      .populate('agentId', 'firstname lastname')
+      .populate('items.productId', 'code name details') // ✅ POPULATE items.productId
+      .lean()
+
     return {
       success: true,
-      order,
+      order: populatedOrder, // ✅ Restituisci l'ordine popolato
       message: 'Ordine creato con successo'
     }
 

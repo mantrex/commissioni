@@ -90,17 +90,24 @@ export default defineEventHandler(async (event) => {
     await order.save()
     console.log('✅ Ordine salvato con successo')
 
-    console.log('📋 Ordine DOPO il salvataggio:')
-    console.log('  - items.length:', order.items.length)
-    if (order.items.length > 0) {
-      console.log('  - items[0]:', JSON.stringify(order.items[0], null, 2))
+    // ✅ POPULATE l'ordine prima di restituirlo
+    const populatedOrder = await Order.findById(orderId)
+      .populate('clientId', 'firstname lastname company address cap city region state tel fax email piva vip')
+      .populate('agentId', 'firstname lastname')
+      .populate('items.productId', 'code name details') // ✅ POPULATE items.productId
+      .lean()
+
+    console.log('📋 Ordine DOPO populate:')
+    console.log('  - items.length:', populatedOrder.items.length)
+    if (populatedOrder.items.length > 0) {
+      console.log('  - items[0]:', JSON.stringify(populatedOrder.items[0], null, 2))
     }
 
     console.log('🔵 ========== FINE API PUT ==========')
 
     return {
       success: true,
-      order,
+      order: populatedOrder, // ✅ Restituisci l'ordine popolato
       message: 'Ordine aggiornato con successo'
     }
 

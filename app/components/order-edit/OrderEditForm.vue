@@ -16,9 +16,8 @@
 
       <!-- Griglia responsiva principale -->
       <div class="order-grid">
-        <!-- ✅ SEZIONE CLIENTE + DATI ORDINE CON HEADER UNICO COLLASSABILE -->
+        <!-- SEZIONE CLIENTE + DATI ORDINE CON HEADER UNICO COLLASSABILE -->
         <q-card flat bordered class="top-section-card">
-          <!-- Header unico collassabile -->
           <q-card-section class="section-header">
             <div class="header-left">
               <q-btn flat dense round :icon="topSectionCollapsed ? 'expand_more' : 'expand_less'" size="sm"
@@ -30,7 +29,6 @@
             </div>
           </q-card-section>
 
-          <!-- Contenuto collassabile -->
           <q-slide-transition>
             <div v-show="!topSectionCollapsed" class="top-section">
               <ClientSection v-model:client="orderData.client" @edit-client="handleEditClient" />
@@ -39,11 +37,11 @@
           </q-slide-transition>
         </q-card>
 
-        <!-- Sezione Corrieri + Note + Finanziari (collassabile separata) -->
+        <!-- Sezione Corrieri + Note + Finanziari -->
         <ShipmentsNotesSection v-model:shipments="orderData.shipments" v-model:notes="orderData.notes"
           v-model:financial="orderData.financial" />
 
-        <!-- Sezione Articoli (collassabile separata) -->
+        <!-- Sezione Articoli -->
         <ItemsSection v-model:items="orderData.items" @add-item="handleAddItem" @edit-item="handleEditItem"
           @remove-item="handleRemoveItem" />
       </div>
@@ -70,7 +68,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useQuasar } from 'quasar'
 import ComponentDialog from '~/components/common/ComponentDialog.vue'
@@ -89,8 +87,6 @@ const $q = useQuasar()
 const orderId = route.params.id
 const isNew = !orderId || orderId === 'new'
 const saving = ref(false)
-
-// ✅ Stato per collassare la sezione top (Cliente + Dati Ordine)
 const topSectionCollapsed = ref(false)
 
 // Dati ordine
@@ -135,7 +131,6 @@ const dialogs = reactive({
   }
 })
 
-// ✅ FIX: Load order data SENZA Object.assign per evitare loop ricorsivi
 const loadOrder = async () => {
   if (isNew) return
 
@@ -146,54 +141,36 @@ const loadOrder = async () => {
       throw new Error(error.value.message)
     }
 
-    // ✅ Assegna proprietà individualmente per evitare loop ricorsivi
     const order = data.value.order
 
     orderData.commNum = order.commNum || ''
     orderData.client = order.clientId || null
-
-    // Dati ordine
     orderData.orderData.date = order.date ? new Date(order.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
     orderData.orderData.dueDate = order.dueDate ? new Date(order.dueDate).toISOString().split('T')[0] : null
     orderData.orderData.agentId = order.agentId?._id || null
     orderData.orderData.status = order.status || 'APERTA'
 
-    // ✅ Spedizioni (assicurati di avere almeno 3 righe vuote)
     if (order.shipments && order.shipments.length > 0) {
       orderData.shipments = order.shipments.map(s => ({
         date: s.date ? new Date(s.date).toISOString().split('T')[0] : null,
         courier: s.courier || ''
       }))
-      // Aggiungi righe vuote fino a 3
-      //while (orderData.shipments.length < 3) {
-      //  orderData.shipments.push({ date: null, courier: '' })
-      //}
     }
 
-    // ✅ Note (assicurati di avere almeno 5 righe vuote)
     if (order.notes && order.notes.length > 0) {
       orderData.notes = order.notes.map(n => ({ text: n.text || '' }))
-
-      // Aggiungi righe vuote fino a 5
-      //while (orderData.notes.length < 5) {
-      //  orderData.notes.push({ text: '' })
-      //}
     }
 
-    // Dati finanziari
     orderData.financial.ca = order.ca || 0
     orderData.financial.rd = order.rd || 0
     orderData.financial.ric = order.ric || 0
     orderData.financial.balance = order.balance || 0
     orderData.financial.pay = order.pay || 0
-
-    // ✅ Articoli
     orderData.items = order.items || []
 
     console.log('✅ Ordine caricato:', {
       items: orderData.items.length,
-      notes: orderData.notes.filter(n => n.text).length,
-      shipments: orderData.shipments.filter(s => s.courier).length
+      itemsData: orderData.items
     })
 
   } catch (err) {
@@ -206,7 +183,6 @@ const loadOrder = async () => {
   }
 }
 
-// Handlers
 const handleBack = () => {
   router.push('/')
 }
@@ -222,30 +198,9 @@ const handleCancel = () => {
   })
 }
 
-// =============================================================================
-// QUESTO È IL handleSave CORRETTO CON DEBUG per OrderEditForm.vue
-// =============================================================================
-
-// ============================================================
-// DEBUG SCRIPT - Inserisci QUESTO nel handleSave di OrderEditForm
-// ============================================================
-
 const handleSave = async () => {
   console.log('🚨 ========== INIZIO SALVATAGGIO ORDINE ==========')
-  console.log('📦 orderData.items PRIMA del salvataggio:', JSON.stringify(orderData.items, null, 2))
-  console.log('📊 Numero items:', orderData.items.length)
-
-  if (orderData.items.length > 0) {
-    console.log('🔍 PRIMO ITEM dettaglio:')
-    console.log('  - productId:', orderData.items[0].productId)
-    console.log('  - code:', orderData.items[0].code)
-    console.log('  - description:', orderData.items[0].description)
-    console.log('  - quantity:', orderData.items[0].quantity)
-    console.log('  - ready:', orderData.items[0].ready)
-    console.log('  - ordered:', orderData.items[0].ordered)
-    console.log('  - invoiced:', orderData.items[0].invoiced)
-    console.log('  - note:', orderData.items[0].note)
-  }
+  console.log('📦 orderData.items:', JSON.stringify(orderData.items, null, 2))
 
   saving.value = true
 
@@ -253,21 +208,16 @@ const handleSave = async () => {
     const endpoint = isNew ? '/api/orders' : `/api/orders/${orderId}`
     const method = isNew ? 'POST' : 'PUT'
 
-    console.log('📡 Chiamata API:', method, endpoint)
-    console.log('📤 Body inviato:', JSON.stringify(orderData, null, 2))
-
     const { data, error } = await useFetch(endpoint, {
       method,
       body: orderData
     })
 
     if (error.value) {
-      console.error('❌ ERRORE API:', error.value)
       throw new Error(error.value.message)
     }
 
-    console.log('✅ Risposta API:', data.value)
-    console.log('🚨 ========== FINE SALVATAGGIO ORDINE ==========')
+    console.log('✅ Ordine salvato')
 
     $q.notify({
       type: 'positive',
@@ -277,7 +227,7 @@ const handleSave = async () => {
     router.push('/')
 
   } catch (err) {
-    console.error('💥 ECCEZIONE:', err)
+    console.error('💥 Errore:', err)
     $q.notify({
       type: 'negative',
       message: 'Errore nel salvataggio',
@@ -287,7 +237,6 @@ const handleSave = async () => {
     saving.value = false
   }
 }
-
 
 const handleEditClient = () => {
   dialogs.client.isNew = !orderData.client
@@ -316,50 +265,144 @@ const handleEditItem = (item, index) => {
   dialogs.item.show = true
 }
 
-const handleItemDialogClose = (savedItem) => {
+const handleItemDialogClose = async (savedItem) => {
   console.log('🔵 handleItemDialogClose chiamato')
   console.log('📦 savedItem ricevuto:', savedItem)
 
   if (!savedItem) {
-    console.log('⚠️ Nessun item da salvare')
+    console.log('⚠️ Nessun item da salvare (chiusura senza salvare)')
     dialogs.item.show = false
     dialogs.item.data = null
     dialogs.item.index = null
     return
   }
 
+  if (!orderData.client || !orderData.client._id) {
+    $q.notify({
+      type: 'negative',
+      message: 'Seleziona prima un cliente prima di aggiungere articoli'
+    })
+    dialogs.item.show = false
+    return
+  }
+
+  // ✅ Salva l'indice PRIMA di modificare l'array
+  const editIndex = dialogs.item.index
+
   if (dialogs.item.isNew) {
-    // ✅ NUOVO ITEM
     console.log('➕ Aggiunta nuovo item')
     orderData.items.push(savedItem)
   } else {
-    // ✅ MODIFICA ITEM ESISTENTE
-    console.log('✏️ Modifica item all\'indice:', dialogs.item.index)
-    console.log('📊 Item PRIMA:', JSON.stringify(orderData.items[dialogs.item.index]))
-
-    // METODO 1: Splice (il più sicuro per la reattività)
-    orderData.items.splice(dialogs.item.index, 1, savedItem)
-
-    console.log('📊 Item DOPO:', JSON.stringify(orderData.items[dialogs.item.index]))
+    console.log('✏️ Modifica item all\'indice:', editIndex)
+    orderData.items.splice(editIndex, 1, savedItem)
   }
 
-  // ✅ FORZARE LA REATTIVITÀ: ricrea completamente l'array
-  console.log('🔄 Forzo aggiornamento reattività')
-  const itemsBackup = [...orderData.items]
-  orderData.items = []
-  nextTick(() => {
-    orderData.items = itemsBackup
-    console.log('✅ Items aggiornati, totale:', orderData.items.length)
-  })
+  console.log('💾 Auto-salvataggio ordine...')
 
-  // Notifica successo
-  $q.notify({
-    type: 'positive',
-    message: dialogs.item.isNew ? 'Articolo aggiunto' : 'Articolo modificato',
-    timeout: 1500
-  })
+  try {
+    saving.value = true
 
-  // Reset dialog state
+    const endpoint = isNew ? '/api/orders' : `/api/orders/${orderId}`
+    const method = isNew ? 'POST' : 'PUT'
+
+    // ✅ Prepara il body PULITO
+    const bodyToSend = {
+      commNum: orderData.commNum,
+      client: {
+        _id: orderData.client._id
+      },
+      orderData: {
+        date: orderData.orderData.date,
+        dueDate: orderData.orderData.dueDate,
+        agentId: orderData.orderData.agentId,
+        status: orderData.orderData.status
+      },
+      shipments: orderData.shipments,
+      notes: orderData.notes,
+      items: orderData.items.map(item => ({
+        productId: item.productId?._id || item.productId || null,
+        code: item.code || '',
+        description: item.description || '',
+        quantity: item.quantity || 0,
+        ready: item.ready || false,
+        invoiced: item.invoiced || 0,
+        ordered: item.ordered || false,
+        note: item.note || ''  // ✅ Includi nota
+      })),
+      financial: {
+        ca: orderData.financial.ca || 0,
+        rd: orderData.financial.rd || 0,
+        ric: orderData.financial.ric || 0,
+        balance: orderData.financial.balance || 0,
+        pay: orderData.financial.pay || 0
+      }
+    }
+
+    console.log('📡 Chiamata API:', method, endpoint)
+    console.log('📤 Items inviati:', bodyToSend.items)
+
+    const { data, error } = await useFetch(endpoint, {
+      method,
+      body: bodyToSend
+    })
+
+    if (error.value) {
+      console.error('❌ ERRORE API:', error.value)
+      throw new Error(error.value.message)
+    }
+
+    console.log('✅ Ordine salvato automaticamente')
+    console.log('📦 Items ricevuti dal server:', data.value.order.items)
+
+    // ✅ SEMPRE aggiorna gli items con i dati popolati dal server
+    if (data.value?.order?.items) {
+      console.log('🔄 Sostituisco COMPLETAMENTE orderData.items')
+
+      // ✅ Forza la reattività creando un nuovo array
+      orderData.items = [...data.value.order.items]
+
+      console.log('✅ Items aggiornati:', orderData.items.length)
+      if (orderData.items.length > 0) {
+        console.log('   Item[0]:', orderData.items[0])
+      }
+    }
+
+    // ✅ Se era un nuovo ordine, aggiorna l'URL
+    if (isNew && data.value?.order?._id) {
+      const newOrderId = data.value.order._id
+      console.log('🆕 Nuovo ordine creato con ID:', newOrderId)
+
+      router.replace(`/orders/${newOrderId}`)
+
+      if (data.value.order.commNum) {
+        orderData.commNum = data.value.order.commNum
+      }
+    }
+
+    $q.notify({
+      type: 'positive',
+      message: dialogs.item.isNew ? 'Articolo aggiunto' : 'Aggiornamento effettuato',
+      timeout: 1500
+    })
+
+  } catch (err) {
+    console.error('❌ Errore auto-salvataggio:', err)
+    $q.notify({
+      type: 'negative',
+      message: 'Errore nel salvataggio automatico',
+      caption: err.message
+    })
+
+    if (dialogs.item.isNew) {
+      orderData.items.pop()
+    } else {
+      // Rollback: ricarica l'ordine
+      await loadOrder()
+    }
+  } finally {
+    saving.value = false
+  }
+
   dialogs.item.show = false
   dialogs.item.data = null
   dialogs.item.index = null
@@ -396,7 +439,6 @@ const handleAgentDialogClose = (savedAgent) => {
   dialogs.agent.show = false
 }
 
-// Mount
 onMounted(() => {
   loadOrder()
 })
@@ -448,7 +490,6 @@ onMounted(() => {
   gap: 16px;
 }
 
-// ✅ Card per la sezione top
 .top-section-card {
   background: $contrast;
 
@@ -481,13 +522,11 @@ onMounted(() => {
   }
 }
 
-// Rimuovo i bordi dalle sotto-sezioni
 .top-section :deep(.q-card) {
   border: none;
   box-shadow: none;
 }
 
-// Responsive
 @media (max-width: 768px) {
   .order-header {
     flex-direction: column;

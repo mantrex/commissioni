@@ -5,13 +5,14 @@
       <q-bar class="dialog-header">
         <div class="dialog-title">{{ title }}</div>
         <q-space />
-        <q-btn dense flat icon="close" @click="closeDialog" aria-label="Chiudi">
+        <q-btn dense flat icon="close" @click="handleCloseButton" aria-label="Chiudi">
           <q-tooltip>Chiudi</q-tooltip>
         </q-btn>
       </q-bar>
 
       <q-card-section class="dialog-content q-pa-none">
-        <component :is="componentName" v-bind="componentProps" @close="closeDialog" />
+        <!-- ✅ Intercetta @close dal componente figlio -->
+        <component :is="componentName" v-bind="componentProps" @close="handleComponentClose" />
       </q-card-section>
     </q-card>
   </q-dialog>
@@ -93,14 +94,30 @@ watch(internalVisibleState, (newValue) => {
   emit('update:modelValue', newValue)
 })
 
-const onHide = () => {
+// ✅ NUOVO: Gestisce @close dal componente figlio CON parametri
+const handleComponentClose = (...args) => {
+  console.log('🔵 ComponentDialog: componente figlio ha emesso @close')
+  console.log('📦 Parametri ricevuti:', args)
+
   internalVisibleState.value = false
   emit('update:modelValue', false)
-  emit('close')
+  emit('close', ...args) // ✅ Passa TUTTI i parametri al parent
 }
 
-const closeDialog = () => {
+// ✅ Gestisce click sul pulsante X (chiusura SENZA parametri)
+const handleCloseButton = () => {
+  console.log('🔵 ComponentDialog: click su pulsante X')
   internalVisibleState.value = false
+  emit('update:modelValue', false)
+  emit('close') // Senza parametri
+}
+
+// ✅ Gestisce @hide del q-dialog (chiusura SENZA parametri)
+const onHide = () => {
+  console.log('🔵 ComponentDialog: q-dialog @hide')
+  internalVisibleState.value = false
+  emit('update:modelValue', false)
+  emit('close') // Senza parametri
 }
 </script>
 
@@ -132,13 +149,10 @@ const closeDialog = () => {
 :deep(.q-dialog__backdrop) {
   transition-duration: 300ms;
 }
-
 </style>
 
 <style>
-
-    .component-dialog .q-dialog__inner {
-      padding: 0;
-    }
-
+.component-dialog .q-dialog__inner {
+  padding: 0;
+}
 </style>

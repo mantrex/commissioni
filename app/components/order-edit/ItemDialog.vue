@@ -224,6 +224,7 @@ const handleProductSelect = (option) => {
 }
 
 // Salva articolo
+// Salva articolo
 const handleSave = async () => {
   if (!localItem.value.description) {
     $q.notify({
@@ -253,7 +254,6 @@ const handleSave = async () => {
         }
       })
 
-      // ✅ Usa direttamente i dati dalla risposta (data.product contiene già tutto)
       localItem.value.productId = data.product._id
       localItem.value.code = data.product.code || ''
       localItem.value.description = data.product.name || ''
@@ -284,14 +284,16 @@ const handleSave = async () => {
         }
       })
 
-      // ✅ Usa direttamente i dati dalla risposta
       localItem.value.code = data.product.code || ''
       localItem.value.description = data.product.name || ''
 
+      /*
       $q.notify({
         type: 'positive',
         message: 'Prodotto aggiornato con successo'
-      })
+      })*/
+     
+
     } catch (err) {
       $q.notify({
         type: 'negative',
@@ -302,29 +304,28 @@ const handleSave = async () => {
     }
   }
 
-  // ✅ IMPORTANTE: Emetti TUTTI i campi dell'item, non solo productId
-  console.log('📤 Emetto item completo:', {
-    productId: localItem.value.productId,
-    code: localItem.value.code,
-    description: localItem.value.description,
-    quantity: localItem.value.quantity,
-    ready: localItem.value.ready,
-    ordered: localItem.value.ordered,
-    invoiced: localItem.value.invoiced,
-    note: localItem.value.note
-  })
+  // ✅ DEBUG
+  console.log('🔍 localItem.value PRIMA di emettere:', JSON.stringify(localItem.value, null, 2))
+  console.log('📝 localItem.value.note:', localItem.value.note)
 
-  emit('close', {
+  // ✅ CORREZIONE: Emetti TUTTI i campi necessari
+  const itemToSave = {
     productId: localItem.value.productId,
-    code: localItem.value.code,
-    description: localItem.value.description,
+    code: localItem.value.code || '',           // ✅ Aggiunto
+    description: localItem.value.description || '', // ✅ Aggiunto
     quantity: localItem.value.quantity,
     ready: localItem.value.ready,
     ordered: localItem.value.ordered,
     invoiced: localItem.value.invoiced,
-    note: localItem.value.note || ''
-  })
+    note: localItem.value.note || ''            // ✅ Aggiunto
+  }
+
+  console.log('📤 ItemDialog emette con:', JSON.stringify(itemToSave, null, 2))
+  console.log('📝 itemToSave.note:', itemToSave.note)
+
+  emit('close', itemToSave)
 }
+
 
 // Load on mount
 onMounted(() => {
