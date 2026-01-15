@@ -1,5 +1,5 @@
 // server/utils/couriers.js - Backend Only
-import Courier from '~/server/models/Courier'
+import Courier from '~~/server/models/Courier'
 
 /**
  * Ottieni tutti i corrieri selezionabili per dropdown/select

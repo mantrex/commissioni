@@ -1,5 +1,5 @@
 // server/utils/insurances.js - Backend Only
-import Insurance from '~/server/models/Insurance'
+import Insurance from '~~/server/models/Insurance'
 
 export async function getSelectableInsurances() {
   try {

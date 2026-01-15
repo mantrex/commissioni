@@ -23,7 +23,6 @@ const shipmentSchema = new mongoose.Schema({
 })
 
 // Index per ricerche
-shipmentSchema.index({ code: 1 })
 shipmentSchema.index({ selectable: 1 })
 
 export default mongoose.models.Shipment || mongoose.model('Shipment', shipmentSchema)

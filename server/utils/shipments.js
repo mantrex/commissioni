@@ -1,5 +1,5 @@
 // server/utils/shipments.js - Backend Only
-import Shipment from '~/server/models/Shipment'
+import Shipment from '~~/server/models/Shipment'
 
 export async function getSelectableShipments() {
   try {

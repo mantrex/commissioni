@@ -135,7 +135,7 @@ const dialogs = reactive({
   }
 })
 
-// Load order data
+// ✅ FIX: Load order data SENZA Object.assign per evitare loop ricorsivi
 const loadOrder = async () => {
   if (isNew) return
 
@@ -146,21 +146,39 @@ const loadOrder = async () => {
       throw new Error(error.value.message)
     }
 
-    // ✅ FIX: Assegna proprietà individualmente per evitare loop ricorsivi
+    // ✅ Assegna proprietà individualmente per evitare loop ricorsivi
     const order = data.value.order
 
     orderData.commNum = order.commNum || ''
     orderData.client = order.clientId || null
 
     // Dati ordine
-    orderData.orderData.date = order.date || new Date().toISOString().split('T')[0]
-    orderData.orderData.dueDate = order.dueDate || null
+    orderData.orderData.date = order.date ? new Date(order.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+    orderData.orderData.dueDate = order.dueDate ? new Date(order.dueDate).toISOString().split('T')[0] : null
     orderData.orderData.agentId = order.agentId?._id || null
     orderData.orderData.status = order.status || 'APERTA'
 
-    // Spedizioni e note
-    orderData.shipments = order.shipments || []
-    orderData.notes = order.notes || []
+    // ✅ Spedizioni (assicurati di avere almeno 3 righe vuote)
+    if (order.shipments && order.shipments.length > 0) {
+      orderData.shipments = order.shipments.map(s => ({
+        date: s.date ? new Date(s.date).toISOString().split('T')[0] : null,
+        courier: s.courier || ''
+      }))
+      // Aggiungi righe vuote fino a 3
+      //while (orderData.shipments.length < 3) {
+      //  orderData.shipments.push({ date: null, courier: '' })
+      //}
+    }
+
+    // ✅ Note (assicurati di avere almeno 5 righe vuote)
+    if (order.notes && order.notes.length > 0) {
+      orderData.notes = order.notes.map(n => ({ text: n.text || '' }))
+
+      // Aggiungi righe vuote fino a 5
+      //while (orderData.notes.length < 5) {
+      //  orderData.notes.push({ text: '' })
+      //}
+    }
 
     // Dati finanziari
     orderData.financial.ca = order.ca || 0
@@ -169,8 +187,14 @@ const loadOrder = async () => {
     orderData.financial.balance = order.balance || 0
     orderData.financial.pay = order.pay || 0
 
-    // Articoli
+    // ✅ Articoli
     orderData.items = order.items || []
+
+    console.log('✅ Ordine caricato:', {
+      items: orderData.items.length,
+      notes: orderData.notes.filter(n => n.text).length,
+      shipments: orderData.shipments.filter(s => s.courier).length
+    })
 
   } catch (err) {
     $q.notify({

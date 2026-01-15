@@ -1,9 +1,7 @@
 <template>
   <q-card flat bordered class="shipments-notes-section">
-    <!-- Header con icona collapse separata -->
     <q-card-section class="section-header">
       <div class="header-left">
-        <!-- Icona collapse separata -->
         <q-btn flat dense round :icon="collapsed ? 'expand_more' : 'expand_less'" size="sm"
           @click="collapsed = !collapsed" class="collapse-btn">
           <q-tooltip>{{ collapsed ? 'Espandi' : 'Comprimi' }}</q-tooltip>
@@ -37,9 +35,7 @@
                 </q-btn>
                 <span class="row-label">{{ index + 1 }}</span>
                 <q-input v-model="shipment.date" type="date" outlined dense class="date-input" />
-                <q-select v-model="shipment.courier" :options="courierOptions" option-label="label" option-value="value"
-                  emit-value map-options outlined dense clearable use-input @filter="filterCouriers"
-                  class="courier-select" />
+                <q-input v-model="shipment.courier" outlined dense placeholder="Corriere" class="courier-input" />
               </div>
             </div>
           </div>
@@ -97,9 +93,8 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch } from 'vue'
 import { useQuasar } from 'quasar'
-import { getSelectableCouriers } from '~~/utils/couriers'
 
 const props = defineProps({
   shipments: {
@@ -120,41 +115,64 @@ const emit = defineEmits(['update:shipments', 'update:notes', 'update:financial'
 
 const $q = useQuasar()
 const collapsed = ref(false)
+const isUpdating = ref(false)
 
-// Inizializza con almeno 3 corrieri e 5 note vuote se non ci sono dati
-const localShipments = ref(
-  props.shipments.length > 0
-    ? props.shipments
-    : Array(3).fill(null).map(() => ({ date: null, courier: '' }))
-)
+const localShipments = ref([])
+const localNotes = ref([])
+const localFinancial = ref({})
 
-const localNotes = ref(
-  props.notes.length > 0
-    ? props.notes
-    : Array(5).fill(null).map(() => ({ text: '' }))
-)
-
-const localFinancial = ref({ ...props.financial })
-
-// Corrieri
-const allCouriers = ref(getSelectableCouriers())
-const courierOptions = ref(allCouriers.value)
-
-const filterCouriers = (val, update) => {
-  if (val === '') {
-    update(() => {
-      courierOptions.value = allCouriers.value
-    })
-    return
+// ✅ Watch sicuri: props -> local (riceve dati da parent)
+watch(() => props.shipments, (newVal) => {
+  if (!isUpdating.value && newVal) {
+    console.log('🚚 ShipmentsSection riceve shipments:', newVal.length)
+    localShipments.value = [...newVal]
   }
+}, { deep: true, immediate: true })
 
-  update(() => {
-    const needle = val.toLowerCase()
-    courierOptions.value = allCouriers.value.filter(
-      c => c.label.toLowerCase().indexOf(needle) > -1
-    )
-  })
-}
+watch(() => props.notes, (newVal) => {
+  if (!isUpdating.value && newVal) {
+    console.log('📝 NotesSection riceve notes:', newVal.length)
+    localNotes.value = [...newVal]
+  }
+}, { deep: true, immediate: true })
+
+watch(() => props.financial, (newVal) => {
+  if (!isUpdating.value && newVal) {
+    console.log('💰 FinancialSection riceve financial')
+    localFinancial.value = { ...newVal }
+  }
+}, { deep: true, immediate: true })
+
+// ✅ Watch sicuri: local -> emit (invia modifiche a parent)
+watch(localShipments, (newVal) => {
+  if (!isUpdating.value) {
+    isUpdating.value = true
+    emit('update:shipments', newVal)
+    setTimeout(() => {
+      isUpdating.value = false
+    }, 50)
+  }
+}, { deep: true })
+
+watch(localNotes, (newVal) => {
+  if (!isUpdating.value) {
+    isUpdating.value = true
+    emit('update:notes', newVal)
+    setTimeout(() => {
+      isUpdating.value = false
+    }, 50)
+  }
+}, { deep: true })
+
+watch(localFinancial, (newVal) => {
+  if (!isUpdating.value) {
+    isUpdating.value = true
+    emit('update:financial', newVal)
+    setTimeout(() => {
+      isUpdating.value = false
+    }, 50)
+  }
+}, { deep: true })
 
 // Gestione corrieri
 const addShipment = () => {
@@ -203,37 +221,6 @@ const removeNote = (index) => {
     localNotes.value.splice(index, 1)
   })
 }
-
-// ⚠️ TEMP DISABLED - Watch causano loop ricorsivo
-/*
-watch(localShipments, (newVal) => {
-  emit('update:shipments', newVal)
-}, { deep: true })
-
-watch(localNotes, (newVal) => {
-  emit('update:notes', newVal)
-}, { deep: true })
-
-watch(localFinancial, (newVal) => {
-  emit('update:financial', newVal)
-}, { deep: true })
-
-watch(() => props.shipments, (newVal) => {
-  if (newVal && newVal.length > 0) {
-    localShipments.value = [...newVal]
-  }
-}, { deep: true })
-
-watch(() => props.notes, (newVal) => {
-  if (newVal && newVal.length > 0) {
-    localNotes.value = [...newVal]
-  }
-}, { deep: true })
-
-watch(() => props.financial, (newVal) => {
-  localFinancial.value = { ...newVal }
-}, { deep: true })
-*/
 </script>
 
 <style scoped lang="scss">
@@ -353,7 +340,6 @@ watch(() => props.financial, (newVal) => {
   gap: 12px;
 }
 
-// Responsive per schermi piccoli
 @media (max-width: 768px) {
   .shipment-row {
     grid-template-columns: 32px 30px 1fr;
@@ -362,7 +348,7 @@ watch(() => props.financial, (newVal) => {
       grid-column: 3;
     }
 
-    .courier-select {
+    .courier-input {
       grid-column: 3;
     }
   }

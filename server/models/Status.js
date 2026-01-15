@@ -23,7 +23,7 @@ const statusSchema = new mongoose.Schema({
 })
 
 // Index per ricerche
-statusSchema.index({ code: 1 })
+
 statusSchema.index({ selectable: 1 })
 
 export default mongoose.models.Status || mongoose.model('Status', statusSchema)

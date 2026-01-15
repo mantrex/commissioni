@@ -65,7 +65,10 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { getSelectableStatuses } from '~~/utils/statuses'
+const { statuses: allStatuses, loadStatuses } = useStatuses()
+const statusOptions = ref([])
+
+
 
 const props = defineProps({
   data: {
@@ -103,8 +106,7 @@ const status = computed({
 })
 
 // Stati
-const allStatuses = ref(getSelectableStatuses())
-const statusOptions = ref(allStatuses.value)
+
 
 const filterStatuses = (val, update) => {
   if (val === '') {
@@ -155,7 +157,9 @@ const filterAgents = (val, update) => {
 }
 
 // Mount
-onMounted(() => {
+onMounted(async() => {
+  await loadStatuses()
+  statusOptions.value = allStatuses.value
   loadAgents()
 })
 </script>

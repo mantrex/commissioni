@@ -23,7 +23,7 @@ const paymentSchema = new mongoose.Schema({
 })
 
 // Index per ricerche
-paymentSchema.index({ code: 1 })
+
 paymentSchema.index({ selectable: 1 })
 
 export default mongoose.models.Payment || mongoose.model('Payment', paymentSchema)

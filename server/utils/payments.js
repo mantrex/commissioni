@@ -1,5 +1,5 @@
 // server/utils/payments.js - Backend Only
-import Payment from '~/server/models/Payment'
+import Payment from '~~/server/models/Payment'
 
 export async function getSelectablePayments() {
   try {

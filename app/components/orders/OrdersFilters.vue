@@ -171,7 +171,9 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { getSelectableStatuses } from '~~/utils/statuses'
+const { statuses: allStatuses, loadStatuses } = useStatuses()
+const statusOptions = ref([])
+
 
 // Props
 const props = defineProps({
@@ -221,9 +223,7 @@ const vipOptions = [
   { label: 'Solo non VIP', value: false }
 ]
 
-// Stati (posizioni)
-const allStatuses = ref(getSelectableStatuses())
-const statusOptions = ref(allStatuses.value)
+
 
 const filterStatuses = (val, update) => {
   if (val === '') {
@@ -241,5 +241,10 @@ const filterStatuses = (val, update) => {
   })
 }
 
+
+onMounted(async () => {
+  await loadStatuses()
+  statusOptions.value = allStatuses.value
+})
 
 </script>

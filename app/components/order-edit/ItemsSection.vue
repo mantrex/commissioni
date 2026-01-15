@@ -2,7 +2,6 @@
   <q-card flat bordered class="items-section">
     <q-card-section class="section-header">
       <div class="header-left">
-        <!-- Icona collapse separata -->
         <q-btn flat dense round :icon="collapsed ? 'expand_more' : 'expand_less'" size="sm"
           @click="collapsed = !collapsed" class="collapse-btn">
           <q-tooltip>{{ collapsed ? 'Espandi' : 'Comprimi' }}</q-tooltip>
@@ -22,13 +21,6 @@
       <q-card-section v-show="!collapsed" class="section-content">
         <q-table flat bordered :rows="localItems" :columns="columns" row-key="_id" class="items-table"
           :rows-per-page-options="[0]" hide-pagination>
-          <!-- Colonna Quantità -->
-          <template v-slot:body-cell-quantity="props">
-            <q-td :props="props">
-              <q-input v-model.number="props.row.quantity" type="number" dense borderless min="0"
-                class="quantity-input" />
-            </q-td>
-          </template>
 
           <!-- Colonna Codice Articolo -->
           <template v-slot:body-cell-code="props">
@@ -44,32 +36,33 @@
             </q-td>
           </template>
 
+          <!-- Colonna Quantità -->
+          <template v-slot:body-cell-quantity="props">
+            <q-td :props="props">
+              {{ props.row.quantity }}
+            </q-td>
+          </template>
+
           <!-- Colonna Pronto -->
           <template v-slot:body-cell-ready="props">
             <q-td :props="props" class="text-center">
-              <q-checkbox v-model="props.row.ready" dense />
+              <q-icon v-if="props.row.ready" name="check_circle" color="positive" size="sm" />
+              <q-icon v-else name="cancel" color="grey-5" size="sm" />
             </q-td>
           </template>
 
           <!-- Colonna Ordinato -->
           <template v-slot:body-cell-ordered="props">
             <q-td :props="props" class="text-center">
-              <q-checkbox v-model="props.row.ordered" dense />
-            </q-td>
-          </template>
-
-          <!-- Colonna Nota -->
-          <template v-slot:body-cell-note="props">
-            <q-td :props="props">
-              <q-input v-model="props.row.note" dense borderless placeholder="Nota..." class="note-input" />
+              <q-icon v-if="props.row.ordered" name="check_circle" color="positive" size="sm" />
+              <q-icon v-else name="cancel" color="grey-5" size="sm" />
             </q-td>
           </template>
 
           <!-- Colonna Fatturato -->
           <template v-slot:body-cell-invoiced="props">
             <q-td :props="props" class="text-center">
-              <q-select v-model.number="props.row.invoiced" :options="invoicedOptions" dense borderless
-                class="invoiced-select" />
+              {{ props.row.invoiced || 0 }}
             </q-td>
           </template>
 
@@ -115,25 +108,11 @@ const props = defineProps({
 const emit = defineEmits(['update:items', 'addItem', 'editItem', 'removeItem'])
 
 const collapsed = ref(false)
-const localItems = ref([...props.items])
-
-// Opzioni per campo "Fatturato"
-const invoicedOptions = [
-  { label: '0', value: 0 },
-  { label: '1', value: 1 },
-  { label: '2', value: 2 },
-  { label: '3', value: 3 }
-]
+const localItems = ref([])
+const isUpdating = ref(false)
 
 // Colonne tabella
 const columns = [
-  {
-    name: 'quantity',
-    label: 'Q.',
-    align: 'center',
-    field: 'quantity',
-    style: 'width: 80px'
-  },
   {
     name: 'code',
     label: 'Cod. Art.',
@@ -147,6 +126,13 @@ const columns = [
     align: 'left',
     field: row => row.productId?.name || row.description,
     style: 'min-width: 200px'
+  },
+  {
+    name: 'quantity',
+    label: 'Q.',
+    align: 'center',
+    field: 'quantity',
+    style: 'width: 80px'
   },
   {
     name: 'ready',
@@ -163,13 +149,6 @@ const columns = [
     style: 'width: 80px'
   },
   {
-    name: 'note',
-    label: 'Nota',
-    align: 'left',
-    field: 'note',
-    style: 'min-width: 150px'
-  },
-  {
     name: 'invoiced',
     label: 'F.',
     align: 'center',
@@ -184,16 +163,24 @@ const columns = [
   }
 ]
 
-// ⚠️ TEMP DISABLED - Watch causano loop ricorsivo
-/*
+// ✅ Watch sicuro: props -> local (riceve dati da parent)
 watch(() => props.items, (newVal) => {
-  localItems.value = [...newVal]
-}, { deep: true })
+  if (!isUpdating.value && newVal) {
+    console.log('📦 ItemsSection riceve items:', newVal.length)
+    localItems.value = [...newVal]
+  }
+}, { deep: true, immediate: true })
 
+// ✅ Watch sicuro: local -> emit (invia modifiche a parent)
 watch(localItems, (newVal) => {
-  emit('update:items', newVal)
+  if (!isUpdating.value) {
+    isUpdating.value = true
+    emit('update:items', newVal)
+    setTimeout(() => {
+      isUpdating.value = false
+    }, 50)
+  }
 }, { deep: true })
-*/
 </script>
 
 <style scoped lang="scss">
@@ -235,23 +222,5 @@ watch(localItems, (newVal) => {
   :deep(tbody tr:hover) {
     background-color: rgba($primary, 0.05);
   }
-}
-
-.quantity-input {
-  max-width: 70px;
-
-  :deep(input) {
-    text-align: center;
-  }
-}
-
-.note-input {
-  :deep(input) {
-    font-size: 13px;
-  }
-}
-
-.invoiced-select {
-  max-width: 50px;
 }
 </style>

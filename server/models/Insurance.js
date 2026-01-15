@@ -23,7 +23,6 @@ const insuranceSchema = new mongoose.Schema({
 })
 
 // Index per ricerche
-insuranceSchema.index({ code: 1 })
 insuranceSchema.index({ selectable: 1 })
 
 export default mongoose.models.Insurance || mongoose.model('Insurance', insuranceSchema)

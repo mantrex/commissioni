@@ -1,7 +1,7 @@
 import Order from '~~/server/models/Order'
 import '~~/server/models/Client'
 import '~~/server/models/Agent'
-import { isValidStatus, getStatusLabel, getStatusCode } from '~~/utils/statuses'
+import { isValidStatus, getStatusLabel, getStatusCode } from '~~/server/utils/statuses'
 
 export default defineEventHandler(async (event) => {
   try {

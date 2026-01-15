@@ -23,7 +23,6 @@ const courierSchema = new mongoose.Schema({
 })
 
 // Index per ricerche
-courierSchema.index({ code: 1 })
 courierSchema.index({ selectable: 1 })
 
 export default mongoose.models.Courier || mongoose.model('Courier', courierSchema)

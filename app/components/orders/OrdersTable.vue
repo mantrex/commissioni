@@ -75,10 +75,10 @@
       </template>
 
       <!-- Colonna stato con badge colorato -->
+    
       <template v-slot:body-cell-status="props">
         <q-td :props="props">
-          <q-badge :color="getStatusColor(props.row.status)"
-            :label="props.row.statusInfo?.label || props.row.status || 'N/A'" />
+          <q-badge :color="getStatusColor(props.row.status)" :label="props.row.status || 'N/A'" />
         </q-td>
       </template>
 
