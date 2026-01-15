@@ -10,11 +10,22 @@ const noteSchema = new mongoose.Schema({
   text: String
 }, { _id: false })
 
+// ✅ SCHEMA CORRETTO CON TUTTI I CAMPI
 const orderItemSchema = new mongoose.Schema({
   productId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Product',
-    required: true
+    ref: 'Product'
+    // ✅ NON required - può essere null per articoli standalone
+  },
+  code: {
+    type: String,
+    default: '',
+    trim: true
+  },
+  description: {
+    type: String,
+    default: '',
+    trim: true
   },
   quantity: {
     type: Number,
@@ -26,13 +37,18 @@ const orderItemSchema = new mongoose.Schema({
   },
   invoiced: {
     type: Number,
-    default: 0,
+    default: 0
   },
   ordered: {
     type: Boolean,
     default: false
+  },
+  note: {
+    type: String,
+    default: '',
+    trim: true
   }
-}, { _id: true }) // Manteniamo _id per referenziarlo nelle fatture
+}, { _id: true })
 
 const orderSchema = new mongoose.Schema({
   commNum: {
@@ -109,12 +125,11 @@ const orderSchema = new mongoose.Schema({
 })
 
 // Index per ricerche comuni
-
 orderSchema.index({ clientId: 1 })
 orderSchema.index({ agentId: 1 })
 orderSchema.index({ status: 1 })
 orderSchema.index({ date: -1 })
 orderSchema.index({ dueDate: 1 })
-orderSchema.index({ dueDate: 1, status: 1 }) // Per scaduti
+orderSchema.index({ dueDate: 1, status: 1 })
 
 export default mongoose.models.Order || mongoose.model('Order', orderSchema)

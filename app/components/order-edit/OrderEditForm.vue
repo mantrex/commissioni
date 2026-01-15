@@ -222,12 +222,39 @@ const handleCancel = () => {
   })
 }
 
+// =============================================================================
+// QUESTO È IL handleSave CORRETTO CON DEBUG per OrderEditForm.vue
+// =============================================================================
+
+// ============================================================
+// DEBUG SCRIPT - Inserisci QUESTO nel handleSave di OrderEditForm
+// ============================================================
+
 const handleSave = async () => {
+  console.log('🚨 ========== INIZIO SALVATAGGIO ORDINE ==========')
+  console.log('📦 orderData.items PRIMA del salvataggio:', JSON.stringify(orderData.items, null, 2))
+  console.log('📊 Numero items:', orderData.items.length)
+
+  if (orderData.items.length > 0) {
+    console.log('🔍 PRIMO ITEM dettaglio:')
+    console.log('  - productId:', orderData.items[0].productId)
+    console.log('  - code:', orderData.items[0].code)
+    console.log('  - description:', orderData.items[0].description)
+    console.log('  - quantity:', orderData.items[0].quantity)
+    console.log('  - ready:', orderData.items[0].ready)
+    console.log('  - ordered:', orderData.items[0].ordered)
+    console.log('  - invoiced:', orderData.items[0].invoiced)
+    console.log('  - note:', orderData.items[0].note)
+  }
+
   saving.value = true
 
   try {
     const endpoint = isNew ? '/api/orders' : `/api/orders/${orderId}`
     const method = isNew ? 'POST' : 'PUT'
+
+    console.log('📡 Chiamata API:', method, endpoint)
+    console.log('📤 Body inviato:', JSON.stringify(orderData, null, 2))
 
     const { data, error } = await useFetch(endpoint, {
       method,
@@ -235,8 +262,12 @@ const handleSave = async () => {
     })
 
     if (error.value) {
+      console.error('❌ ERRORE API:', error.value)
       throw new Error(error.value.message)
     }
+
+    console.log('✅ Risposta API:', data.value)
+    console.log('🚨 ========== FINE SALVATAGGIO ORDINE ==========')
 
     $q.notify({
       type: 'positive',
@@ -246,6 +277,7 @@ const handleSave = async () => {
     router.push('/')
 
   } catch (err) {
+    console.error('💥 ECCEZIONE:', err)
     $q.notify({
       type: 'negative',
       message: 'Errore nel salvataggio',
@@ -255,6 +287,7 @@ const handleSave = async () => {
     saving.value = false
   }
 }
+
 
 const handleEditClient = () => {
   dialogs.client.isNew = !orderData.client
