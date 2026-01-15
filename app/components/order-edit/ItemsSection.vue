@@ -59,10 +59,11 @@
             </q-td>
           </template>
 
-          <!-- Colonna Fatturato -->
+          <!-- ✅ Colonna Fatturato - CHECKBOX CLICCABILE -->
           <template v-slot:body-cell-invoiced="props">
             <q-td :props="props" class="text-center">
-              {{ props.row.invoiced || 0 }}
+              <q-checkbox :model-value="props.row.invoiced"
+                @update:model-value="handleInvoicedToggle(props.rowIndex, $event)" dense color="positive" />
             </q-td>
           </template>
 
@@ -105,7 +106,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['update:items', 'addItem', 'editItem', 'removeItem'])
+const emit = defineEmits(['update:items', 'addItem', 'editItem', 'removeItem', 'toggleInvoiced']) // ✅ Aggiunto evento
 
 const collapsed = ref(false)
 const localItems = ref([])
@@ -163,7 +164,13 @@ const columns = [
   }
 ]
 
-// ✅ Watch sicuro: props -> local (riceve dati da parent)
+// ✅ Gestisce il toggle della checkbox Fatturato
+const handleInvoicedToggle = (index, newValue) => {
+  console.log('✅ Toggle fatturato item', index, 'a:', newValue)
+  emit('toggleInvoiced', index, newValue)
+}
+
+// Watch sicuri
 watch(() => props.items, (newVal) => {
   if (!isUpdating.value && newVal) {
     console.log('📦 ItemsSection riceve items:', newVal.length)
@@ -171,7 +178,6 @@ watch(() => props.items, (newVal) => {
   }
 }, { deep: true, immediate: true })
 
-// ✅ Watch sicuro: local -> emit (invia modifiche a parent)
 watch(localItems, (newVal) => {
   if (!isUpdating.value) {
     isUpdating.value = true
@@ -184,6 +190,9 @@ watch(localItems, (newVal) => {
 </script>
 
 <style scoped lang="scss">
+
+
+
 .items-section {
   background: $contrast;
 }

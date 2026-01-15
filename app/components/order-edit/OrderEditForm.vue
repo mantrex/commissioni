@@ -43,7 +43,7 @@
 
         <!-- Sezione Articoli -->
         <ItemsSection v-model:items="orderData.items" @add-item="handleAddItem" @edit-item="handleEditItem"
-          @remove-item="handleRemoveItem" />
+          @remove-item="handleRemoveItem" @toggle-invoiced="handleToggleInvoiced" />
       </div>
     </div>
 
@@ -437,6 +437,88 @@ const handleAgentDialogClose = (savedAgent) => {
     })
   }
   dialogs.agent.show = false
+}
+
+// ✅ AGGIUNGI questa nuova funzione
+const handleToggleInvoiced = async (index, newValue) => {
+  console.log('🔵 handleToggleInvoiced - index:', index, 'newValue:', newValue)
+
+  if (isNew) {
+    // Se è un nuovo ordine non ancora salvato, aggiorna solo localmente
+    orderData.items[index].invoiced = newValue
+    return
+  }
+
+  // Aggiorna localmente
+  orderData.items[index].invoiced = newValue
+
+  // ✅ Salva automaticamente l'ordine
+  try {
+    saving.value = true
+
+    const bodyToSend = {
+      commNum: orderData.commNum,
+      client: {
+        _id: orderData.client._id
+      },
+      orderData: {
+        date: orderData.orderData.date,
+        dueDate: orderData.orderData.dueDate,
+        agentId: orderData.orderData.agentId,
+        status: orderData.orderData.status
+      },
+      shipments: orderData.shipments,
+      notes: orderData.notes,
+      items: orderData.items.map(item => ({
+        productId: item.productId?._id || item.productId || null,
+        code: item.code || '',
+        description: item.description || '',
+        quantity: item.quantity || 0,
+        ready: item.ready || false,
+        invoiced: item.invoiced || false, // ✅ Boolean
+        ordered: item.ordered || false,
+        note: item.note || ''
+      })),
+      financial: {
+        ca: orderData.financial.ca || 0,
+        rd: orderData.financial.rd || 0,
+        ric: orderData.financial.ric || 0,
+        balance: orderData.financial.balance || 0,
+        pay: orderData.financial.pay || 0
+      }
+    }
+
+    const { data, error } = await useFetch(`/api/orders/${orderId}`, {
+      method: 'PUT',
+      body: bodyToSend
+    })
+
+    if (error.value) {
+      console.error('❌ ERRORE API:', error.value)
+      throw new Error(error.value.message)
+    }
+
+    console.log('✅ Fatturato aggiornato')
+
+    // Aggiorna items con dati popolati
+    if (data.value?.order?.items) {
+      orderData.items = data.value.order.items
+    }
+
+  } catch (err) {
+    console.error('❌ Errore toggle fatturato:', err)
+
+    // Rollback
+    orderData.items[index].invoiced = !newValue
+
+    $q.notify({
+      type: 'negative',
+      message: 'Errore aggiornamento fatturato',
+      caption: err.message
+    })
+  } finally {
+    saving.value = false
+  }
 }
 
 onMounted(() => {

@@ -10,12 +10,11 @@ const noteSchema = new mongoose.Schema({
   text: String
 }, { _id: false })
 
-// ✅ SCHEMA CORRETTO CON TUTTI I CAMPI
+// ✅ SCHEMA CORRETTO CON invoiced BOOLEAN
 const orderItemSchema = new mongoose.Schema({
   productId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Product'
-    // ✅ NON required - può essere null per articoli standalone
   },
   code: {
     type: String,
@@ -36,8 +35,8 @@ const orderItemSchema = new mongoose.Schema({
     default: false
   },
   invoiced: {
-    type: Number,
-    default: 0
+    type: Boolean,  // ✅ BOOLEAN invece di Number
+    default: false
   },
   ordered: {
     type: Boolean,
@@ -132,4 +131,5 @@ orderSchema.index({ date: -1 })
 orderSchema.index({ dueDate: 1 })
 orderSchema.index({ dueDate: 1, status: 1 })
 
+// ✅ EXPORT CORRETTO
 export default mongoose.models.Order || mongoose.model('Order', orderSchema)

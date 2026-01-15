@@ -51,10 +51,8 @@
         <div class="checkboxes-group">
           <q-checkbox v-model="localItem.ready" label="Pronto" dense />
           <q-checkbox v-model="localItem.ordered" label="Ordinato" dense />
+          <q-checkbox v-model="localItem.invoiced" label="Fatturato" dense />
         </div>
-
-        <q-select v-model.number="localItem.invoiced" :options="invoicedOptions" label="Fatturato" outlined dense
-          emit-value map-options class="q-mt-sm" />
 
         <q-input v-model="localItem.note" label="Nota" outlined dense type="textarea" :rows="2" class="q-mt-sm" />
       </div>
@@ -96,21 +94,13 @@ const localItem = ref({
   quantity: 1,
   ready: false,
   ordered: false,
-  invoiced: 0,
+  invoiced: false,
   note: ''
 })
 
 const selectedProductOption = ref(null)
 const allProducts = ref([])
 const productOptions = ref([])
-
-// Opzioni fatturato
-const invoicedOptions = [
-  { label: 'Non fatturato (0)', value: 0 },
-  { label: 'Fatturato 1', value: 1 },
-  { label: 'Fatturato 2', value: 2 },
-  { label: 'Fatturato 3', value: 3 }
-]
 
 // ✅ Watch per caricare i dati dell'item quando props.item cambia (modalità modifica)
 watch(() => props.item, (newVal) => {
@@ -125,9 +115,11 @@ watch(() => props.item, (newVal) => {
       quantity: newVal.quantity || 1,
       ready: newVal.ready || false,
       ordered: newVal.ordered || false,
-      invoiced: newVal.invoiced || 0,
+      invoiced: newVal.invoiced || false,
       note: newVal.note || ''
     }
+
+    console.log('📝 Dati caricati in localItem:', localItem.value)
 
     // Se c'è un prodotto associato, pre-seleziona nell'autocomplete
     if (newVal.productId) {
@@ -145,7 +137,7 @@ watch(() => props.item, (newVal) => {
       quantity: 1,
       ready: false,
       ordered: false,
-      invoiced: 0,
+      invoiced: false,
       note: ''
     }
     selectedProductOption.value = null
@@ -224,7 +216,6 @@ const handleProductSelect = (option) => {
 }
 
 // Salva articolo
-// Salva articolo
 const handleSave = async () => {
   if (!localItem.value.description) {
     $q.notify({
@@ -287,13 +278,10 @@ const handleSave = async () => {
       localItem.value.code = data.product.code || ''
       localItem.value.description = data.product.name || ''
 
-      /*
       $q.notify({
         type: 'positive',
         message: 'Prodotto aggiornato con successo'
-      })*/
-     
-
+      })
     } catch (err) {
       $q.notify({
         type: 'negative',
@@ -307,25 +295,24 @@ const handleSave = async () => {
   // ✅ DEBUG
   console.log('🔍 localItem.value PRIMA di emettere:', JSON.stringify(localItem.value, null, 2))
   console.log('📝 localItem.value.note:', localItem.value.note)
+  console.log('☑️  localItem.value.invoiced:', localItem.value.invoiced)
 
-  // ✅ CORREZIONE: Emetti TUTTI i campi necessari
+  // ✅ Emetti TUTTI i campi necessari
   const itemToSave = {
     productId: localItem.value.productId,
-    code: localItem.value.code || '',           // ✅ Aggiunto
-    description: localItem.value.description || '', // ✅ Aggiunto
+    code: localItem.value.code || '',
+    description: localItem.value.description || '',
     quantity: localItem.value.quantity,
     ready: localItem.value.ready,
     ordered: localItem.value.ordered,
     invoiced: localItem.value.invoiced,
-    note: localItem.value.note || ''            // ✅ Aggiunto
+    note: localItem.value.note || ''
   }
 
   console.log('📤 ItemDialog emette con:', JSON.stringify(itemToSave, null, 2))
-  console.log('📝 itemToSave.note:', itemToSave.note)
 
   emit('close', itemToSave)
 }
-
 
 // Load on mount
 onMounted(() => {
