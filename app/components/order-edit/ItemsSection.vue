@@ -22,24 +22,28 @@
         <q-table flat bordered :rows="items" :columns="columns" row-key="_id" class="items-table"
           :rows-per-page-options="[0]" hide-pagination>
 
+          <!-- Colonna Codice Articolo -->
           <template v-slot:body-cell-code="props">
             <q-td :props="props">
               {{ props.row.productId?.code || props.row.code || '' }}
             </q-td>
           </template>
 
+          <!-- Colonna Descrizione -->
           <template v-slot:body-cell-description="props">
             <q-td :props="props">
               {{ props.row.productId?.name || props.row.description || '' }}
             </q-td>
           </template>
 
+          <!-- Colonna Quantità -->
           <template v-slot:body-cell-quantity="props">
             <q-td :props="props">
               {{ props.row.quantity }}
             </q-td>
           </template>
 
+          <!-- Colonna Pronto -->
           <template v-slot:body-cell-ready="props">
             <q-td :props="props" class="text-center">
               <q-icon v-if="props.row.ready" name="check_circle" color="positive" size="sm" />
@@ -47,6 +51,7 @@
             </q-td>
           </template>
 
+          <!-- Colonna Ordinato -->
           <template v-slot:body-cell-ordered="props">
             <q-td :props="props" class="text-center">
               <q-icon v-if="props.row.ordered" name="check_circle" color="positive" size="sm" />
@@ -54,13 +59,16 @@
             </q-td>
           </template>
 
+          <!-- ✅ FIX: Colonna Fatturato CLICCABILE -->
           <template v-slot:body-cell-invoiced="props">
             <q-td :props="props" class="text-center">
-              <q-checkbox :model-value="props.row.invoiced"
-                @update:model-value="handleInvoicedToggle(props.rowIndex, $event)" dense color="positive" />
+              <q-checkbox :model-value="props.row.invoiced > 0"
+                @update:model-value="toggleInvoiced(props.rowIndex, $event)" dense class="invoiced-checkbox" />
+              
             </q-td>
           </template>
 
+          <!-- Colonna Azioni -->
           <template v-slot:body-cell-actions="props">
             <q-td :props="props" class="text-center">
               <q-btn flat dense round icon="edit" size="sm" color="primary"
@@ -74,6 +82,7 @@
             </q-td>
           </template>
 
+          <!-- Nessun articolo -->
           <template v-slot:no-data>
             <div class="full-width row flex-center q-gutter-sm q-pa-lg">
               <q-icon size="2em" name="inventory_2" color="grey-5" />
@@ -91,16 +100,17 @@
 <script setup>
 import { ref } from 'vue'
 
-// ✅ defineModel crea automaticamente il two-way binding
+// ✅ USA defineModel
 const items = defineModel('items', {
   type: Array,
   default: () => []
 })
 
-const emit = defineEmits(['addItem', 'editItem', 'removeItem', 'toggleInvoiced'])
+const emit = defineEmits(['addItem', 'editItem', 'removeItem'])
 
 const collapsed = ref(false)
 
+// Colonne tabella
 const columns = [
   {
     name: 'code',
@@ -142,7 +152,7 @@ const columns = [
     label: 'F.',
     align: 'center',
     field: 'invoiced',
-    style: 'width: 60px'
+    style: 'width: 80px'
   },
   {
     name: 'actions',
@@ -152,9 +162,18 @@ const columns = [
   }
 ]
 
-const handleInvoicedToggle = (index, newValue) => {
-  console.log('✅ Toggle fatturato item', index, 'a:', newValue)
-  emit('toggleInvoiced', index, newValue)
+// ✅ FIX: Funzione per toggle fatturato
+const toggleInvoiced = (index, newValue) => {
+  console.log('🔵 Toggle fatturato item', index, 'a:', newValue)
+
+  // ✅ MODIFICA DIRETTA sull'array reattivo
+  if (newValue) {
+    items.value[index].invoiced = 1
+  } else {
+    items.value[index].invoiced = 0
+  }
+
+  console.log('✅ Item aggiornato:', items.value[index])
 }
 </script>
 
@@ -197,5 +216,16 @@ const handleInvoicedToggle = (index, newValue) => {
   :deep(tbody tr:hover) {
     background-color: rgba($primary, 0.05);
   }
+}
+
+.invoiced-checkbox {
+  display: inline-block;
+  margin-right: 4px;
+}
+
+.invoiced-label {
+  font-size: 12px;
+  color: $text-secondary;
+  margin-left: 4px;
 }
 </style>

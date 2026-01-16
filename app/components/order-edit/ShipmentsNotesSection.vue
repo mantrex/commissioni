@@ -28,7 +28,7 @@
             </div>
 
             <div class="shipments-list">
-              <div v-for="(shipment, index) in localShipments" :key="index" class="shipment-row">
+              <div v-for="(shipment, index) in shipments" :key="index" class="shipment-row">
                 <q-btn flat dense round icon="delete" size="xs" color="negative" @click="removeShipment(index)"
                   class="delete-btn">
                   <q-tooltip>Rimuovi</q-tooltip>
@@ -53,7 +53,7 @@
             </div>
 
             <div class="notes-list">
-              <div v-for="(note, index) in localNotes" :key="index" class="note-row">
+              <div v-for="(note, index) in notes" :key="index" class="note-row">
                 <q-btn flat dense round icon="delete" size="xs" color="negative" @click="removeNote(index)"
                   class="delete-btn">
                   <q-tooltip>Rimuovi</q-tooltip>
@@ -74,15 +74,13 @@
             </div>
 
             <div class="financial-data">
-              <q-input v-model.number="localFinancial.ca" label="C/A" type="number" outlined dense
+              <q-input v-model.number="financial.ca" label="C/A" type="number" outlined dense class="financial-input" />
+              <q-input v-model.number="financial.rd" label="RD" type="number" outlined dense class="financial-input" />
+              <q-input v-model.number="financial.ric" label="Ric." type="number" outlined dense
                 class="financial-input" />
-              <q-input v-model.number="localFinancial.rd" label="RD" type="number" outlined dense
+              <q-input v-model.number="financial.balance" label="Saldo" type="number" outlined dense
                 class="financial-input" />
-              <q-input v-model.number="localFinancial.ric" label="Ric." type="number" outlined dense
-                class="financial-input" />
-              <q-input v-model.number="localFinancial.balance" label="Saldo" type="number" outlined dense
-                class="financial-input" />
-              <q-input v-model.number="localFinancial.pay" label="Pag." type="number" outlined dense
+              <q-input v-model.number="financial.pay" label="Pag." type="number" outlined dense
                 class="financial-input" />
             </div>
           </div>
@@ -93,94 +91,41 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 import { useQuasar } from 'quasar'
 
-const props = defineProps({
-  shipments: {
-    type: Array,
-    default: () => []
-  },
-  notes: {
-    type: Array,
-    default: () => []
-  },
-  financial: {
-    type: Object,
-    default: () => ({})
-  }
+// ✅ USA defineModel per tutti e tre i modelli
+const shipments = defineModel('shipments', {
+  type: Array,
+  default: () => []
 })
 
-const emit = defineEmits(['update:shipments', 'update:notes', 'update:financial'])
+const notes = defineModel('notes', {
+  type: Array,
+  default: () => []
+})
+
+const financial = defineModel('financial', {
+  type: Object,
+  default: () => ({
+    ca: 0,
+    rd: 0,
+    ric: 0,
+    balance: 0,
+    pay: 0
+  })
+})
 
 const $q = useQuasar()
 const collapsed = ref(false)
-const isUpdating = ref(false)
 
-const localShipments = ref([])
-const localNotes = ref([])
-const localFinancial = ref({})
-
-// ✅ Watch sicuri: props -> local (riceve dati da parent)
-watch(() => props.shipments, (newVal) => {
-  if (!isUpdating.value && newVal) {
-    console.log('🚚 ShipmentsSection riceve shipments:', newVal.length)
-    localShipments.value = [...newVal]
-  }
-}, { deep: true, immediate: true })
-
-watch(() => props.notes, (newVal) => {
-  if (!isUpdating.value && newVal) {
-    console.log('📝 NotesSection riceve notes:', newVal.length)
-    localNotes.value = [...newVal]
-  }
-}, { deep: true, immediate: true })
-
-watch(() => props.financial, (newVal) => {
-  if (!isUpdating.value && newVal) {
-    console.log('💰 FinancialSection riceve financial')
-    localFinancial.value = { ...newVal }
-  }
-}, { deep: true, immediate: true })
-
-// ✅ Watch sicuri: local -> emit (invia modifiche a parent)
-watch(localShipments, (newVal) => {
-  if (!isUpdating.value) {
-    isUpdating.value = true
-    emit('update:shipments', newVal)
-    setTimeout(() => {
-      isUpdating.value = false
-    }, 50)
-  }
-}, { deep: true })
-
-watch(localNotes, (newVal) => {
-  if (!isUpdating.value) {
-    isUpdating.value = true
-    emit('update:notes', newVal)
-    setTimeout(() => {
-      isUpdating.value = false
-    }, 50)
-  }
-}, { deep: true })
-
-watch(localFinancial, (newVal) => {
-  if (!isUpdating.value) {
-    isUpdating.value = true
-    emit('update:financial', newVal)
-    setTimeout(() => {
-      isUpdating.value = false
-    }, 50)
-  }
-}, { deep: true })
-
-// Gestione corrieri
+// ✅ Gestione corrieri - Modifica diretta senza watch
 const addShipment = () => {
-  localShipments.value.push({ date: null, courier: '' })
+  shipments.value.push({ date: null, courier: '' })
 }
 
 const removeShipment = (index) => {
-  if (localShipments.value.length <= 1) {
+  if (shipments.value.length <= 1) {
     $q.notify({
       type: 'warning',
       message: 'Deve rimanere almeno un corriere'
@@ -194,17 +139,17 @@ const removeShipment = (index) => {
     cancel: true,
     persistent: true
   }).onOk(() => {
-    localShipments.value.splice(index, 1)
+    shipments.value.splice(index, 1)
   })
 }
 
-// Gestione note
+// ✅ Gestione note - Modifica diretta senza watch
 const addNote = () => {
-  localNotes.value.push({ text: '' })
+  notes.value.push({ text: '' })
 }
 
 const removeNote = (index) => {
-  if (localNotes.value.length <= 1) {
+  if (notes.value.length <= 1) {
     $q.notify({
       type: 'warning',
       message: 'Deve rimanere almeno una nota'
@@ -218,7 +163,7 @@ const removeNote = (index) => {
     cancel: true,
     persistent: true
   }).onOk(() => {
-    localNotes.value.splice(index, 1)
+    notes.value.splice(index, 1)
   })
 }
 </script>

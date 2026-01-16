@@ -9,7 +9,7 @@
     <div class="row q-col-gutter-sm">
       <!-- Numero Commissione -->
       <div class="col-12 col-sm-6">
-        <q-input v-model="commNum" label="Comm. n." outlined dense readonly :bg-color="'grey-3'">
+        <q-input v-model="data.commNum" label="Comm. n." outlined dense readonly :bg-color="'grey-3'">
           <template v-slot:prepend>
             <q-icon name="tag" />
           </template>
@@ -18,7 +18,7 @@
 
       <!-- Data -->
       <div class="col-12 col-sm-6">
-        <q-input v-model="date" label="Data" type="date" outlined dense>
+        <q-input v-model="data.date" label="Data" type="date" outlined dense>
           <template v-slot:prepend>
             <q-icon name="event" />
           </template>
@@ -27,7 +27,7 @@
 
       <!-- Scadenza -->
       <div class="col-12 col-sm-6">
-        <q-input v-model="dueDate" label="Scad" type="date" outlined dense>
+        <q-input v-model="data.dueDate" label="Scad" type="date" outlined dense>
           <template v-slot:prepend>
             <q-icon name="event_available" />
           </template>
@@ -37,8 +37,9 @@
       <!-- Agente -->
       <div class="col-12 col-sm-6">
         <div class="agent-field-wrapper">
-          <q-select v-model="agentId" :options="agentOptions" label="Agente" option-label="label" option-value="value"
-            emit-value map-options outlined dense clearable use-input @filter="filterAgents" class="agent-select">
+          <q-select v-model="data.agentId" :options="agentOptions" label="Agente" option-label="label"
+            option-value="value" emit-value map-options outlined dense clearable use-input @filter="filterAgents"
+            class="agent-select">
             <template v-slot:prepend>
               <q-icon name="person" />
             </template>
@@ -52,7 +53,7 @@
 
       <!-- Pos Pratica (Status) -->
       <div class="col-12">
-        <q-select v-model="status" :options="statusOptions" label="Pos Pratica" option-label="label"
+        <q-select v-model="data.status" :options="statusOptions" label="Pos Pratica" option-label="label"
           option-value="value" emit-value map-options outlined dense use-input @filter="filterStatuses">
           <template v-slot:prepend>
             <q-icon name="flag" />
@@ -64,49 +65,21 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
+
 const { statuses: allStatuses, loadStatuses } = useStatuses()
+
+// ✅ USA defineModel
+const data = defineModel('data', {
+  type: Object,
+  required: true
+})
+
+const emit = defineEmits(['editAgent'])
+
 const statusOptions = ref([])
-
-
-
-const props = defineProps({
-  data: {
-    type: Object,
-    required: true
-  }
-})
-
-const emit = defineEmits(['update:data', 'editAgent'])
-
-// Uso computed getter/setter per evitare loop ricorsivi
-const commNum = computed({
-  get: () => props.data.commNum,
-  set: (val) => emit('update:data', { ...props.data, commNum: val })
-})
-
-const date = computed({
-  get: () => props.data.date,
-  set: (val) => emit('update:data', { ...props.data, date: val })
-})
-
-const dueDate = computed({
-  get: () => props.data.dueDate,
-  set: (val) => emit('update:data', { ...props.data, dueDate: val })
-})
-
-const agentId = computed({
-  get: () => props.data.agentId,
-  set: (val) => emit('update:data', { ...props.data, agentId: val })
-})
-
-const status = computed({
-  get: () => props.data.status,
-  set: (val) => emit('update:data', { ...props.data, status: val })
-})
-
-// Stati
-
+const allAgents = ref([])
+const agentOptions = ref([])
 
 const filterStatuses = (val, update) => {
   if (val === '') {
@@ -124,16 +97,15 @@ const filterStatuses = (val, update) => {
   })
 }
 
-// Agenti
-const allAgents = ref([])
-const agentOptions = ref([])
-
+// ✅ FIX: Corretto l'uso di $fetch
 const loadAgents = async () => {
   try {
-    const { data } = await useFetch('/api/agents')
-    if (data.value) {
-      allAgents.value = data.value.agents
-      agentOptions.value = allAgents.value
+    const agentsData = await $fetch('/api/agents')
+
+    // ✅ $fetch restituisce direttamente i dati, non ha .value
+    if (agentsData && agentsData.agents) {
+      allAgents.value = agentsData.agents
+      agentOptions.value = agentsData.agents
     }
   } catch (err) {
     console.error('Errore caricamento agenti:', err)
@@ -156,11 +128,10 @@ const filterAgents = (val, update) => {
   })
 }
 
-// Mount
-onMounted(async() => {
+onMounted(async () => {
   await loadStatuses()
   statusOptions.value = allStatuses.value
-  loadAgents()
+  await loadAgents() // ✅ Aggiungi await per aspettare il caricamento
 })
 </script>
 

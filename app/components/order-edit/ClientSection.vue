@@ -5,7 +5,7 @@
       <div class="header-left">
         <q-icon name="person" size="18px" />
         <span class="section-label">Cliente</span>
-        <q-checkbox v-model="localClient.vip" label="VIP" dense class="q-ml-sm" />
+        <q-checkbox v-if="client" v-model="client.vip" label="VIP" dense class="q-ml-sm" />
       </div>
       <q-btn flat dense round icon="edit" size="sm" color="primary" @click="emit('editClient')">
         <q-tooltip>Modifica Cliente</q-tooltip>
@@ -38,45 +38,43 @@
     </div>
 
     <!-- Dati Cliente (read-only quando selezionato) -->
-    <div class="client-data" v-if="localClient._id || showEmptyForm">
+    <div class="client-data" v-if="client?._id || showEmptyForm">
       <div class="row q-col-gutter-sm">
         <div class="col-6">
-          <q-input v-model="localClient.lastname" label="Cognome" outlined dense readonly />
+          <q-input v-model="client.lastname" label="Cognome" outlined dense readonly />
         </div>
         <div class="col-6">
-          <q-input v-model="localClient.firstname" label="Nome" outlined dense readonly />
+          <q-input v-model="client.firstname" label="Nome" outlined dense readonly />
         </div>
       </div>
 
-      <!-- Campo Ditta -->
-      <q-input v-model="localClient.company" label="Ditta" outlined dense readonly class="q-mt-sm" />
-
-      <q-input v-model="localClient.address" label="Indirizzo" outlined dense readonly class="q-mt-sm" />
+      <q-input v-model="client.company" label="Ditta" outlined dense readonly class="q-mt-sm" />
+      <q-input v-model="client.address" label="Indirizzo" outlined dense readonly class="q-mt-sm" />
 
       <div class="row q-col-gutter-sm q-mt-sm">
         <div class="col-4">
-          <q-input v-model="localClient.cap" label="CAP" outlined dense readonly />
+          <q-input v-model="client.cap" label="CAP" outlined dense readonly />
         </div>
         <div class="col-8">
-          <q-input v-model="localClient.city" label="Città" outlined dense readonly />
+          <q-input v-model="client.city" label="Città" outlined dense readonly />
         </div>
       </div>
 
       <div class="row q-col-gutter-sm q-mt-sm">
         <div class="col-6">
-          <q-input v-model="localClient.state" label="Paese" outlined dense readonly />
+          <q-input v-model="client.state" label="Paese" outlined dense readonly />
         </div>
         <div class="col-6">
-          <q-input v-model="localClient.tel" label="Telefono" outlined dense readonly />
+          <q-input v-model="client.tel" label="Telefono" outlined dense readonly />
         </div>
       </div>
 
       <div class="row q-col-gutter-sm q-mt-sm">
         <div class="col-6">
-          <q-input v-model="localClient.email" label="Email" outlined dense readonly />
+          <q-input v-model="client.email" label="Email" outlined dense readonly />
         </div>
         <div class="col-6">
-          <q-input v-model="localClient.piva" label="P.IVA" outlined dense readonly />
+          <q-input v-model="client.piva" label="P.IVA" outlined dense readonly />
         </div>
       </div>
     </div>
@@ -84,22 +82,15 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 
-const props = defineProps({
-  client: {
-    type: Object,
-    default: null
-  }
+// ✅ USA defineModel
+const client = defineModel('client', {
+  type: Object,
+  default: null
 })
 
-const emit = defineEmits(['update:client', 'editClient'])
-
-// ✅ FIX: Usa computed con getter/setter invece di ref + watch
-const localClient = computed({
-  get: () => props.client || {},
-  set: (val) => emit('update:client', val)
-})
+const emit = defineEmits(['editClient'])
 
 const selectedClientOption = ref(null)
 const allClients = ref([])
@@ -171,7 +162,7 @@ const filterClients = (val, update) => {
 // Gestisce selezione cliente
 const handleClientSelect = (option) => {
   if (!option) {
-    localClient.value = {}
+    client.value = null
     showEmptyForm.value = false
     return
   }
@@ -180,7 +171,7 @@ const handleClientSelect = (option) => {
     emit('editClient')
     selectedClientOption.value = null
   } else {
-    localClient.value = { ...option.client }
+    client.value = { ...option.client }
     showEmptyForm.value = false
   }
 }
@@ -215,10 +206,6 @@ loadClients()
     color: $text-primary;
     font-size: 14px;
   }
-}
-
-.client-autocomplete {
-  // nessuno stile particolare
 }
 
 .client-data {

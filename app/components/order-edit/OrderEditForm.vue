@@ -1,18 +1,44 @@
 <template>
   <q-page class="order-edit-page">
     <div class="order-edit-container">
-      <!-- Header con azioni -->
-      <div class="order-header">
-        <div class="order-title">
-          <q-btn flat dense icon="arrow_back" @click="handleBack" />
-          <h5>{{ isNew ? 'Nuova Commissione' : `Commissione ${orderData.commNum}` }}</h5>
-        </div>
+      <!-- ✅ HEADER ULTRA-COMPATTO -->
+      <div class="order-header-sticky">
+        <div class="header-content">
+          <div class="header-left">
+            <q-btn flat dense round icon="arrow_back" @click="handleBack" size="sm" class="back-btn">
+              <q-tooltip>Torna alla lista</q-tooltip>
+            </q-btn>
 
-        <div class="order-actions">
-          <q-btn color="negative" flat label="Annulla" @click="handleCancel" />
-          <q-btn color="primary" unelevated label="Salva" icon="save" @click="handleSave" :loading="saving" />
+            <span class="commission-info">
+              Commissione {{ isNew ? 'Nuova' : orderData.commNum }}
+              <span v-if="!isNew && orderData.client" class="separator">•</span>
+              <span v-if="!isNew && orderData.client" class="client-name">
+                {{ getClientName(orderData.client) }}
+              </span>
+            </span>
+          </div>
+
+          <div class="header-actions">
+            <q-btn flat dense label="Fattura" icon="receipt" @click="handleInvoice" :disable="!canCreateInvoice"
+              class="action-btn invoice-btn">
+              <q-tooltip v-if="!canCreateInvoice">
+                Nessun articolo fatturato
+              </q-tooltip>
+              <q-tooltip v-else>
+                Crea fattura da questa commissione
+              </q-tooltip>
+            </q-btn>
+
+            <q-btn flat dense label="Annulla" @click="handleCancel" class="action-btn cancel-btn" />
+
+            <q-btn flat dense label="Salva" icon="save" @click="handleSave" :loading="saving"
+              class="action-btn save-btn" />
+          </div>
         </div>
       </div>
+
+      <!-- ✅ SPACER ridotto -->
+      <div class="header-spacer"></div>
 
       <!-- Griglia responsiva principale -->
       <div class="order-grid">
@@ -43,7 +69,7 @@
 
         <!-- Sezione Articoli -->
         <ItemsSection v-model:items="orderData.items" @add-item="handleAddItem" @edit-item="handleEditItem"
-          @remove-item="handleRemoveItem" @toggle-invoiced="handleToggleInvoiced" />
+          @remove-item="handleRemoveItem" />
       </div>
     </div>
 
@@ -68,7 +94,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, nextTick } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useQuasar } from 'quasar'
 import ComponentDialog from '~/components/common/ComponentDialog.vue'
@@ -131,6 +157,27 @@ const dialogs = reactive({
   }
 })
 
+// ✅ COMPUTED: Verifica se si può creare fattura
+const canCreateInvoice = computed(() => {
+  if (!orderData.items || orderData.items.length === 0) {
+    return false
+  }
+
+  // Controlla se almeno un item ha invoiced > 0
+  return orderData.items.some(item => item.invoiced && item.invoiced > 0)
+})
+
+// Funzione per mostrare il nome cliente
+const getClientName = (client) => {
+  if (!client) return ''
+  const parts = []
+  if (client.lastname) parts.push(client.lastname)
+  if (client.firstname) parts.push(client.firstname)
+  if (parts.length > 0) return parts.join(' ')
+  if (client.company) return client.company
+  return ''
+}
+
 const loadOrder = async () => {
   if (isNew) return
 
@@ -168,11 +215,6 @@ const loadOrder = async () => {
     orderData.financial.pay = order.pay || 0
     orderData.items = order.items || []
 
-    console.log('✅ Ordine caricato:', {
-      items: orderData.items.length,
-      itemsData: orderData.items
-    })
-
   } catch (err) {
     $q.notify({
       type: 'negative',
@@ -198,10 +240,21 @@ const handleCancel = () => {
   })
 }
 
-const handleSave = async () => {
-  console.log('🚨 ========== INIZIO SALVATAGGIO ORDINE ==========')
-  console.log('📦 orderData.items:', JSON.stringify(orderData.items, null, 2))
+// ✅ NUOVO: Handler per creare fattura
+const handleInvoice = () => {
+  if (!canCreateInvoice.value) {
+    $q.notify({
+      type: 'warning',
+      message: 'Nessun articolo fatturato in questa commissione'
+    })
+    return
+  }
 
+  // Naviga alla pagina fattura con il numero commissione
+  router.push(`/invoices/new?commNum=${orderData.commNum}`)
+}
+
+const handleSave = async () => {
   saving.value = true
 
   try {
@@ -217,8 +270,6 @@ const handleSave = async () => {
       throw new Error(error.value.message)
     }
 
-    console.log('✅ Ordine salvato')
-
     $q.notify({
       type: 'positive',
       message: 'Ordine salvato con successo'
@@ -227,7 +278,6 @@ const handleSave = async () => {
     router.push('/')
 
   } catch (err) {
-    console.error('💥 Errore:', err)
     $q.notify({
       type: 'negative',
       message: 'Errore nel salvataggio',
@@ -266,11 +316,7 @@ const handleEditItem = (item, index) => {
 }
 
 const handleItemDialogClose = async (savedItem) => {
-  console.log('🔵 handleItemDialogClose chiamato')
-  console.log('📦 savedItem ricevuto:', savedItem)
-
   if (!savedItem) {
-    console.log('⚠️ Nessun item da salvare (chiusura senza salvare)')
     dialogs.item.show = false
     dialogs.item.data = null
     dialogs.item.index = null
@@ -286,18 +332,13 @@ const handleItemDialogClose = async (savedItem) => {
     return
   }
 
-  // ✅ Salva l'indice PRIMA di modificare l'array
   const editIndex = dialogs.item.index
 
   if (dialogs.item.isNew) {
-    console.log('➕ Aggiunta nuovo item')
     orderData.items.push(savedItem)
   } else {
-    console.log('✏️ Modifica item all\'indice:', editIndex)
     orderData.items.splice(editIndex, 1, savedItem)
   }
-
-  console.log('💾 Auto-salvataggio ordine...')
 
   try {
     saving.value = true
@@ -305,7 +346,6 @@ const handleItemDialogClose = async (savedItem) => {
     const endpoint = isNew ? '/api/orders' : `/api/orders/${orderId}`
     const method = isNew ? 'POST' : 'PUT'
 
-    // ✅ Prepara il body PULITO
     const bodyToSend = {
       commNum: orderData.commNum,
       client: {
@@ -327,7 +367,7 @@ const handleItemDialogClose = async (savedItem) => {
         ready: item.ready || false,
         invoiced: item.invoiced || 0,
         ordered: item.ordered || false,
-        note: item.note || ''  // ✅ Includi nota
+        note: item.note || ''
       })),
       financial: {
         ca: orderData.financial.ca || 0,
@@ -338,42 +378,22 @@ const handleItemDialogClose = async (savedItem) => {
       }
     }
 
-    console.log('📡 Chiamata API:', method, endpoint)
-    console.log('📤 Items inviati:', bodyToSend.items)
-
     const { data, error } = await useFetch(endpoint, {
       method,
       body: bodyToSend
     })
 
     if (error.value) {
-      console.error('❌ ERRORE API:', error.value)
       throw new Error(error.value.message)
     }
 
-    console.log('✅ Ordine salvato automaticamente')
-    console.log('📦 Items ricevuti dal server:', data.value.order.items)
-
-    // ✅ SEMPRE aggiorna gli items con i dati popolati dal server
     if (data.value?.order?.items) {
-      console.log('🔄 Sostituisco COMPLETAMENTE orderData.items')
-
-      // ✅ Forza la reattività creando un nuovo array
       orderData.items = [...data.value.order.items]
-
-      console.log('✅ Items aggiornati:', orderData.items.length)
-      if (orderData.items.length > 0) {
-        console.log('   Item[0]:', orderData.items[0])
-      }
     }
 
-    // ✅ Se era un nuovo ordine, aggiorna l'URL
     if (isNew && data.value?.order?._id) {
       const newOrderId = data.value.order._id
-      console.log('🆕 Nuovo ordine creato con ID:', newOrderId)
-
       router.replace(`/orders/${newOrderId}`)
-
       if (data.value.order.commNum) {
         orderData.commNum = data.value.order.commNum
       }
@@ -386,7 +406,6 @@ const handleItemDialogClose = async (savedItem) => {
     })
 
   } catch (err) {
-    console.error('❌ Errore auto-salvataggio:', err)
     $q.notify({
       type: 'negative',
       message: 'Errore nel salvataggio automatico',
@@ -396,7 +415,6 @@ const handleItemDialogClose = async (savedItem) => {
     if (dialogs.item.isNew) {
       orderData.items.pop()
     } else {
-      // Rollback: ricarica l'ordine
       await loadOrder()
     }
   } finally {
@@ -407,7 +425,6 @@ const handleItemDialogClose = async (savedItem) => {
   dialogs.item.data = null
   dialogs.item.index = null
 }
-
 
 const handleRemoveItem = (index) => {
   $q.dialog({
@@ -429,7 +446,6 @@ const handleEditAgent = () => {
 const handleAgentDialogClose = (savedAgent) => {
   if (savedAgent) {
     orderData.orderData.agentId = savedAgent._id
-
     $q.notify({
       type: 'positive',
       message: 'Agente aggiornato',
@@ -437,88 +453,6 @@ const handleAgentDialogClose = (savedAgent) => {
     })
   }
   dialogs.agent.show = false
-}
-
-// ✅ AGGIUNGI questa nuova funzione
-const handleToggleInvoiced = async (index, newValue) => {
-  console.log('🔵 handleToggleInvoiced - index:', index, 'newValue:', newValue)
-
-  if (isNew) {
-    // Se è un nuovo ordine non ancora salvato, aggiorna solo localmente
-    orderData.items[index].invoiced = newValue
-    return
-  }
-
-  // Aggiorna localmente
-  orderData.items[index].invoiced = newValue
-
-  // ✅ Salva automaticamente l'ordine
-  try {
-    saving.value = true
-
-    const bodyToSend = {
-      commNum: orderData.commNum,
-      client: {
-        _id: orderData.client._id
-      },
-      orderData: {
-        date: orderData.orderData.date,
-        dueDate: orderData.orderData.dueDate,
-        agentId: orderData.orderData.agentId,
-        status: orderData.orderData.status
-      },
-      shipments: orderData.shipments,
-      notes: orderData.notes,
-      items: orderData.items.map(item => ({
-        productId: item.productId?._id || item.productId || null,
-        code: item.code || '',
-        description: item.description || '',
-        quantity: item.quantity || 0,
-        ready: item.ready || false,
-        invoiced: item.invoiced || false, // ✅ Boolean
-        ordered: item.ordered || false,
-        note: item.note || ''
-      })),
-      financial: {
-        ca: orderData.financial.ca || 0,
-        rd: orderData.financial.rd || 0,
-        ric: orderData.financial.ric || 0,
-        balance: orderData.financial.balance || 0,
-        pay: orderData.financial.pay || 0
-      }
-    }
-
-    const { data, error } = await useFetch(`/api/orders/${orderId}`, {
-      method: 'PUT',
-      body: bodyToSend
-    })
-
-    if (error.value) {
-      console.error('❌ ERRORE API:', error.value)
-      throw new Error(error.value.message)
-    }
-
-    console.log('✅ Fatturato aggiornato')
-
-    // Aggiorna items con dati popolati
-    if (data.value?.order?.items) {
-      orderData.items = data.value.order.items
-    }
-
-  } catch (err) {
-    console.error('❌ Errore toggle fatturato:', err)
-
-    // Rollback
-    orderData.items[index].invoiced = !newValue
-
-    $q.notify({
-      type: 'negative',
-      message: 'Errore aggiornamento fatturato',
-      caption: err.message
-    })
-  } finally {
-    saving.value = false
-  }
 }
 
 onMounted(() => {
@@ -529,44 +463,105 @@ onMounted(() => {
 <style scoped lang="scss">
 .order-edit-page {
   background: $bg-light;
+  min-height: 100vh;
 }
 
 .order-edit-container {
   max-width: 1600px;
   margin: 0 auto;
-  padding: 16px;
+  position: relative;
 }
 
-.order-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-  padding: 16px;
-  background: $contrast;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+// ✅ HEADER ULTRA-COMPATTO (altezza ~40px)
+.order-header-sticky {
+  position: fixed;
+  top: 50px;
+  left: 0;
+  right: 0;
+  z-index: 999;
+  background: $sticky-menu;
+  border-bottom: 1px solid $border;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
 
-  .order-title {
+  .header-content {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 8px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    min-height: 40px;
+  }
+
+  .header-left {
     display: flex;
     align-items: center;
     gap: 12px;
+    flex: 1;
+    min-width: 0;
 
-    h5 {
-      margin: 0;
+    .back-btn {
       color: $text-primary;
-      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .commission-info {
+      font-size: 15px;
       font-weight: 600;
+      color: $text-primary;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      .separator {
+        color: $text-secondary;
+        font-weight: 400;
+      }
+
+      .client-name {
+        font-weight: 400;
+        color: $text-secondary;
+      }
     }
   }
 
-  .order-actions {
+  .header-actions {
     display: flex;
-    gap: 12px;
+    gap: 4px; // ✅ RIDOTTO da 8px a 4px
+    flex-shrink: 0;
+
+    .action-btn {
+      font-size: 13px;
+      font-weight: 500;
+      padding: 6px 16px;
+      text-transform: none;
+      min-height: 32px;
+    }
+
+    .invoice-btn {
+      color: $accent;
+    }
+
+    .cancel-btn {
+      color: $negative;
+    }
+
+    .save-btn {
+      color: $primary;
+    }
   }
 }
 
+.header-spacer {
+  height: 90px;
+}
+
 .order-grid {
+  padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -610,17 +605,62 @@ onMounted(() => {
 }
 
 @media (max-width: 768px) {
-  .order-header {
-    flex-direction: column;
-    gap: 16px;
-
-    .order-title {
-      width: 100%;
+  .order-header-sticky {
+    .header-content {
+      padding: 6px 12px;
+      gap: 8px;
     }
 
-    .order-actions {
-      width: 100%;
-      justify-content: flex-end;
+    .header-left {
+      gap: 8px;
+
+      .commission-info {
+        font-size: 14px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+
+        .separator {
+          display: none;
+        }
+      }
+    }
+
+    .header-actions {
+      gap: 3px;
+
+      .action-btn {
+        font-size: 12px;
+        padding: 5px 12px;
+        min-height: 28px;
+      }
+    }
+  }
+
+  .header-spacer {
+    height: 100px;
+  }
+}
+
+@media (max-width: 480px) {
+  .order-header-sticky {
+    .header-left {
+      .commission-info {
+        font-size: 13px;
+
+        .client-name {
+          font-size: 12px;
+        }
+      }
+    }
+
+    .header-actions {
+      flex-wrap: wrap;
+      gap: 4px;
+
+      .action-btn {
+        min-width: 65px;
+      }
     }
   }
 }
