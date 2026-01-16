@@ -35,7 +35,7 @@ const orderItemSchema = new mongoose.Schema({
     default: false
   },
   invoiced: {
-    type: Boolean,  // ✅ BOOLEAN invece di Number
+    type: Boolean,  
     default: false
   },
   ordered: {

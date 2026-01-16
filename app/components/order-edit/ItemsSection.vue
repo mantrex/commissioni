@@ -9,8 +9,8 @@
 
         <q-icon name="inventory_2" size="20px" />
         <span>Articoli</span>
-        <q-chip v-if="localItems.length > 0" dense color="primary" text-color="white" size="sm" class="q-ml-sm">
-          {{ localItems.length }}
+        <q-chip v-if="items.length > 0" dense color="primary" text-color="white" size="sm" class="q-ml-sm">
+          {{ items.length }}
         </q-chip>
       </div>
 
@@ -19,31 +19,27 @@
 
     <q-slide-transition>
       <q-card-section v-show="!collapsed" class="section-content">
-        <q-table flat bordered :rows="localItems" :columns="columns" row-key="_id" class="items-table"
+        <q-table flat bordered :rows="items" :columns="columns" row-key="_id" class="items-table"
           :rows-per-page-options="[0]" hide-pagination>
 
-          <!-- Colonna Codice Articolo -->
           <template v-slot:body-cell-code="props">
             <q-td :props="props">
               {{ props.row.productId?.code || props.row.code || '' }}
             </q-td>
           </template>
 
-          <!-- Colonna Descrizione -->
           <template v-slot:body-cell-description="props">
             <q-td :props="props">
               {{ props.row.productId?.name || props.row.description || '' }}
             </q-td>
           </template>
 
-          <!-- Colonna Quantità -->
           <template v-slot:body-cell-quantity="props">
             <q-td :props="props">
               {{ props.row.quantity }}
             </q-td>
           </template>
 
-          <!-- Colonna Pronto -->
           <template v-slot:body-cell-ready="props">
             <q-td :props="props" class="text-center">
               <q-icon v-if="props.row.ready" name="check_circle" color="positive" size="sm" />
@@ -51,7 +47,6 @@
             </q-td>
           </template>
 
-          <!-- Colonna Ordinato -->
           <template v-slot:body-cell-ordered="props">
             <q-td :props="props" class="text-center">
               <q-icon v-if="props.row.ordered" name="check_circle" color="positive" size="sm" />
@@ -59,7 +54,6 @@
             </q-td>
           </template>
 
-          <!-- ✅ Colonna Fatturato - CHECKBOX CLICCABILE -->
           <template v-slot:body-cell-invoiced="props">
             <q-td :props="props" class="text-center">
               <q-checkbox :model-value="props.row.invoiced"
@@ -67,7 +61,6 @@
             </q-td>
           </template>
 
-          <!-- Colonna Azioni -->
           <template v-slot:body-cell-actions="props">
             <q-td :props="props" class="text-center">
               <q-btn flat dense round icon="edit" size="sm" color="primary"
@@ -81,7 +74,6 @@
             </q-td>
           </template>
 
-          <!-- Nessun articolo -->
           <template v-slot:no-data>
             <div class="full-width row flex-center q-gutter-sm q-pa-lg">
               <q-icon size="2em" name="inventory_2" color="grey-5" />
@@ -97,22 +89,18 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 
-const props = defineProps({
-  items: {
-    type: Array,
-    default: () => []
-  }
+// ✅ defineModel crea automaticamente il two-way binding
+const items = defineModel('items', {
+  type: Array,
+  default: () => []
 })
 
-const emit = defineEmits(['update:items', 'addItem', 'editItem', 'removeItem', 'toggleInvoiced']) // ✅ Aggiunto evento
+const emit = defineEmits(['addItem', 'editItem', 'removeItem', 'toggleInvoiced'])
 
 const collapsed = ref(false)
-const localItems = ref([])
-const isUpdating = ref(false)
 
-// Colonne tabella
 const columns = [
   {
     name: 'code',
@@ -164,35 +152,13 @@ const columns = [
   }
 ]
 
-// ✅ Gestisce il toggle della checkbox Fatturato
 const handleInvoicedToggle = (index, newValue) => {
   console.log('✅ Toggle fatturato item', index, 'a:', newValue)
   emit('toggleInvoiced', index, newValue)
 }
-
-// Watch sicuri
-watch(() => props.items, (newVal) => {
-  if (!isUpdating.value && newVal) {
-    console.log('📦 ItemsSection riceve items:', newVal.length)
-    localItems.value = [...newVal]
-  }
-}, { deep: true, immediate: true })
-
-watch(localItems, (newVal) => {
-  if (!isUpdating.value) {
-    isUpdating.value = true
-    emit('update:items', newVal)
-    setTimeout(() => {
-      isUpdating.value = false
-    }, 50)
-  }
-}, { deep: true })
 </script>
 
 <style scoped lang="scss">
-
-
-
 .items-section {
   background: $contrast;
 }

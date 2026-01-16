@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
     const order = await Order.findById(orderId)
       .populate('clientId', 'firstname lastname company address cap city region state tel fax email piva vip')
       .populate('agentId', 'firstname lastname')
-      .populate('items.productId', 'code name details')
+      .populate('items.productId', 'code name details invoiced')
       .lean()
 
     if (!order) {
