@@ -22,28 +22,24 @@
         <q-table flat bordered :rows="items" :columns="columns" row-key="_id" class="items-table"
           :rows-per-page-options="[0]" hide-pagination>
 
-          <!-- Colonna Codice Articolo -->
           <template v-slot:body-cell-code="props">
             <q-td :props="props">
               {{ props.row.productId?.code || props.row.code || '' }}
             </q-td>
           </template>
 
-          <!-- Colonna Descrizione -->
           <template v-slot:body-cell-description="props">
             <q-td :props="props">
               {{ props.row.productId?.name || props.row.description || '' }}
             </q-td>
           </template>
 
-          <!-- Colonna Quantità -->
           <template v-slot:body-cell-quantity="props">
             <q-td :props="props">
               {{ props.row.quantity }}
             </q-td>
           </template>
 
-          <!-- Colonna Pronto -->
           <template v-slot:body-cell-ready="props">
             <q-td :props="props" class="text-center">
               <q-icon v-if="props.row.ready" name="check_circle" color="positive" size="sm" />
@@ -51,7 +47,6 @@
             </q-td>
           </template>
 
-          <!-- Colonna Ordinato -->
           <template v-slot:body-cell-ordered="props">
             <q-td :props="props" class="text-center">
               <q-icon v-if="props.row.ordered" name="check_circle" color="positive" size="sm" />
@@ -59,16 +54,13 @@
             </q-td>
           </template>
 
-          <!-- ✅ FIX: Colonna Fatturato CLICCABILE -->
           <template v-slot:body-cell-invoiced="props">
             <q-td :props="props" class="text-center">
-              <q-checkbox :model-value="props.row.invoiced > 0"
-                @update:model-value="toggleInvoiced(props.rowIndex, $event)" dense class="invoiced-checkbox" />
-              
+              <q-checkbox color='positive' :model-value="props.row.invoiced" @update:model-value="toggleInvoiced(props.rowIndex, $event)"
+                dense :disable="saving" class="invoiced-checkbox" />
             </q-td>
           </template>
 
-          <!-- Colonna Azioni -->
           <template v-slot:body-cell-actions="props">
             <q-td :props="props" class="text-center">
               <q-btn flat dense round icon="edit" size="sm" color="primary"
@@ -82,7 +74,6 @@
             </q-td>
           </template>
 
-          <!-- Nessun articolo -->
           <template v-slot:no-data>
             <div class="full-width row flex-center q-gutter-sm q-pa-lg">
               <q-icon size="2em" name="inventory_2" color="grey-5" />
@@ -99,8 +90,9 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useQuasar } from 'quasar'
+import { useRouter, useRoute } from 'vue-router'
 
-// ✅ USA defineModel
 const items = defineModel('items', {
   type: Array,
   default: () => []
@@ -108,9 +100,15 @@ const items = defineModel('items', {
 
 const emit = defineEmits(['addItem', 'editItem', 'removeItem'])
 
+const $q = useQuasar()
+const route = useRoute()
+const router = useRouter()
 const collapsed = ref(false)
+const saving = ref(false)
 
-// Colonne tabella
+const orderId = route.params.id
+const isNew = !orderId || orderId === 'new'
+
 const columns = [
   {
     name: 'code',
@@ -162,18 +160,64 @@ const columns = [
   }
 ]
 
-// ✅ FIX: Funzione per toggle fatturato
-const toggleInvoiced = (index, newValue) => {
+const toggleInvoiced = async (index, newValue) => {
   console.log('🔵 Toggle fatturato item', index, 'a:', newValue)
 
-  // ✅ MODIFICA DIRETTA sull'array reattivo
-  if (newValue) {
-    items.value[index].invoiced = 1
-  } else {
-    items.value[index].invoiced = 0
-  }
+  items.value[index].invoiced = newValue
 
   console.log('✅ Item aggiornato:', items.value[index])
+
+  if (isNew) {
+    console.log('⚠️  Ordine nuovo - salvataggio rimandato')
+    return
+  }
+
+  saving.value = true
+
+  try {
+    console.log('💾 Salvataggio automatico...')
+
+    const { data, error } = await useFetch(`/api/orders/${orderId}`, {
+      method: 'PUT',
+      body: {
+        items: items.value.map(item => ({
+          productId: item.productId?._id || item.productId || null,
+          code: item.code || '',
+          description: item.description || '',
+          quantity: item.quantity || 0,
+          ready: item.ready || false,
+          invoiced: item.invoiced || false,
+          ordered: item.ordered || false,
+          note: item.note || ''
+        }))
+      }
+    })
+
+    if (error.value) {
+      throw new Error(error.value.message || 'Errore salvataggio')
+    }
+
+    console.log('✅ Salvato')
+
+    $q.notify({
+      type: 'positive',
+      message: 'Aggiornato',
+      timeout: 800
+    })
+
+  } catch (err) {
+    console.error('❌ Errore:', err)
+
+    items.value[index].invoiced = !newValue
+
+    $q.notify({
+      type: 'negative',
+      message: 'Errore salvataggio',
+      caption: err.message
+    })
+  } finally {
+    saving.value = false
+  }
 }
 </script>
 
@@ -220,12 +264,5 @@ const toggleInvoiced = (index, newValue) => {
 
 .invoiced-checkbox {
   display: inline-block;
-  margin-right: 4px;
-}
-
-.invoiced-label {
-  font-size: 12px;
-  color: $text-secondary;
-  margin-left: 4px;
 }
 </style>
