@@ -139,7 +139,6 @@ const invoiceSchema = new mongoose.Schema({
 })
 
 // Index per ricerche
-invoiceSchema.index({ invoiceId: 1 })
 invoiceSchema.index({ orderId: 1 })
 invoiceSchema.index({ commNum: 1 })
 invoiceSchema.index({ 'client.clientId': 1 })
