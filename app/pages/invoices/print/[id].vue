@@ -196,10 +196,6 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useQuasar } from 'quasar'
 
-// ✅ DISABILITA IL LAYOUT GLOBALE
-definePageMeta({
-  layout: false
-})
 
 const router = useRouter()
 const route = useRoute()
@@ -229,21 +225,15 @@ const hasShippingLabel = computed(() => {
 // Methods
 const loadInvoice = async () => {
   try {
-    const { data, error } = await useFetch(`/api/invoices/${invoiceId}`)
-
-    if (error.value) {
-      throw new Error(error.value.message)
-    }
-
-    invoice.value = data.value.invoice
-
+    const response = await $fetch(`/api/invoices/${invoiceId}`)
+    invoice.value = response.invoice
   } catch (err) {
     $q.notify({
       type: 'negative',
       message: 'Errore nel caricamento',
       caption: err.message
     })
-    router.back()
+    router.push(`/invoices/edit?id=${invoiceId}`)
   }
 }
 

@@ -241,7 +241,7 @@ const handleCancel = () => {
 }
 
 // ✅ NUOVO: Handler per creare fattura
-const handleInvoice = () => {
+const handleInvoice = async () => {
   if (!canCreateInvoice.value) {
     $q.notify({
       type: 'warning',
@@ -250,8 +250,75 @@ const handleInvoice = () => {
     return
   }
 
-  // Naviga alla pagina fattura con il numero commissione
-  router.push(`/invoices/edit?commNum=${orderData.commNum}`)
+  try {
+    // ✅ CONTROLLA SE ESISTE GIÀ UNA FATTURA PER QUESTO ORDINE
+    console.log('🔍 Verifica esistenza fattura per commNum:', orderData.commNum)
+
+    const { data: checkData } = await useFetch(`/api/invoices/check-existing?commNum=${orderData.commNum}`)
+
+    if (checkData.value?.exists) {
+      // ⚠️ Fattura già esistente - Mostra dialog con scelte
+      const existingInvoice = checkData.value.invoice
+
+      $q.dialog({
+        title: 'Fattura esistente',
+        message: `Esiste già la fattura n. ${existingInvoice.invoiceId} per questa commissione.`,
+        options: {
+          type: 'radio',
+          model: 'view',
+          items: [
+            { label: 'Vai alla fattura esistente', value: 'view' },
+            { label: 'Crea una nuova fattura', value: 'create' }
+          ]
+        },
+        cancel: {
+          label: 'Annulla',
+          flat: true
+        },
+        ok: {
+          label: 'Continua',
+          color: 'primary'
+        },
+        persistent: true
+      }).onOk((choice) => {
+        if (choice === 'view') {
+          // Vai alla fattura esistente
+          router.push(`/invoices/edit?id=${existingInvoice._id}`)
+        } else {
+          // Crea nuova con conferma
+          $q.dialog({
+            title: 'Conferma creazione',
+            message: 'Creando una nuova fattura potresti generare un duplicato. Sei sicuro?',
+            cancel: {
+              label: 'Annulla',
+              flat: true
+            },
+            ok: {
+              label: 'Crea nuova fattura',
+              color: 'negative'
+            },
+            persistent: true
+          }).onOk(() => {
+            router.push(`/invoices/edit?commNum=${orderData.commNum}`)
+          })
+        }
+      })
+
+      return
+    }
+
+    // ✅ Nessuna fattura esistente - Vai direttamente alla creazione
+    console.log('✅ Nessuna fattura esistente, procedo alla creazione')
+    router.push(`/invoices/edit?commNum=${orderData.commNum}`)
+
+  } catch (err) {
+    console.error('Errore controllo fattura:', err)
+    $q.notify({
+      type: 'negative',
+      message: 'Errore nel controllo fattura',
+      caption: err.message
+    })
+  }
 }
 
 const handleSave = async () => {

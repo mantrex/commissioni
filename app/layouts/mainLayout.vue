@@ -10,7 +10,7 @@ const handleLogout = () => {
 
 <template>
   <q-layout view="hHh lpR fFf">
-    <q-header elevated class="bg-header">
+    <q-header elevated class="bg-header no-print">
       <q-toolbar>
         <q-toolbar-title>
           <q-icon name="business" size="24px" class="q-mr-sm" />

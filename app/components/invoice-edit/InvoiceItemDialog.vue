@@ -1,6 +1,35 @@
 <template>
   <div class="invoice-item-dialog-content">
     <q-form @submit.prevent="handleSave" class="invoice-item-form">
+      <!-- ✅ NUOVO: Autocomplete per selezionare prodotto esistente o nuovo -->
+      <div class="form-section">
+        <div class="section-title">Seleziona Articolo</div>
+        <q-select v-model="selectedProductOption" :options="productOptions" option-label="label" option-value="value"
+          label="Cerca articolo esistente" outlined dense use-input clearable @filter="filterProducts"
+          @update:model-value="handleProductSelect">
+          <template v-slot:prepend>
+            <q-icon name="search" />
+          </template>
+
+          <template v-slot:option="scope">
+            <q-item v-bind="scope.itemProps">
+              <q-item-section avatar v-if="scope.opt.isNew">
+                <q-icon name="add_circle" color="primary" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label>{{ scope.opt.label }}</q-item-label>
+                <q-item-label caption v-if="scope.opt.caption">
+                  {{ scope.opt.caption }}
+                </q-item-label>
+              </q-item-section>
+            </q-item>
+          </template>
+        </q-select>
+      </div>
+
+      <q-separator class="q-my-md" />
+
+      <!-- Form dati articolo -->
       <div class="form-section">
         <div class="section-title">Dati Articolo</div>
 
@@ -36,7 +65,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 
 const props = defineProps({
@@ -59,6 +88,10 @@ const localItem = ref({
   unitPrice: 0
 })
 
+const selectedProductOption = ref(null)
+const allProducts = ref([])
+const productOptions = ref([])
+
 const computedTotal = computed(() => {
   const total = (localItem.value.quantity || 0) * (localItem.value.unitPrice || 0)
   return new Intl.NumberFormat('it-IT', {
@@ -67,6 +100,79 @@ const computedTotal = computed(() => {
   }).format(total)
 })
 
+// ✅ Carica lista prodotti
+const loadProducts = async () => {
+  try {
+    const data = await $fetch('/api/products')
+    if (data && data.products) {
+      allProducts.value = data.products.map(p => ({
+        label: p.code || p.name,
+        caption: p.name,
+        value: p._id,
+        product: p,
+        isNew: false
+      }))
+
+      productOptions.value = [
+        { label: '➕ Crea nuovo articolo', value: 'new', isNew: true },
+        ...allProducts.value
+      ]
+    }
+  } catch (err) {
+    console.error('Errore caricamento prodotti:', err)
+  }
+}
+
+// ✅ Filtra prodotti nell'autocomplete
+const filterProducts = (val, update) => {
+  if (val === '') {
+    update(() => {
+      productOptions.value = [
+        { label: '➕ Crea nuovo articolo', value: 'new', isNew: true },
+        ...allProducts.value
+      ]
+    })
+    return
+  }
+
+  update(() => {
+    const needle = val.toLowerCase()
+    const filtered = allProducts.value.filter(
+      p => p.label.toLowerCase().indexOf(needle) > -1 ||
+        (p.caption && p.caption.toLowerCase().indexOf(needle) > -1)
+    )
+    productOptions.value = [
+      { label: '➕ Crea nuovo articolo', value: 'new', isNew: true },
+      ...filtered
+    ]
+  })
+}
+
+// ✅ Gestisce selezione prodotto dall'autocomplete
+const handleProductSelect = (option) => {
+  if (!option) {
+    localItem.value.productId = null
+    localItem.value.code = ''
+    localItem.value.description = ''
+    selectedProductOption.value = null
+    return
+  }
+
+  if (option.isNew) {
+    // Nuovo prodotto - pulisce i campi
+    localItem.value.productId = null
+    localItem.value.code = ''
+    localItem.value.description = ''
+    selectedProductOption.value = null
+  } else {
+    // Carica prodotto esistente
+    localItem.value.productId = option.product._id
+    localItem.value.code = option.product.code || ''
+    localItem.value.description = option.product.name || ''
+  }
+}
+
+// ✅ Watch per caricare i dati quando si modifica un item esistente
 watch(() => props.item, (newVal) => {
   if (newVal && Object.keys(newVal).length > 0) {
     localItem.value = {
@@ -77,6 +183,14 @@ watch(() => props.item, (newVal) => {
       quantity: newVal.quantity || 0,
       unitPrice: newVal.unitPrice || 0
     }
+
+    // Se c'è un prodotto associato, pre-seleziona nell'autocomplete
+    if (newVal.productId) {
+      const product = allProducts.value.find(p => p.value === newVal.productId)
+      if (product) {
+        selectedProductOption.value = product
+      }
+    }
   } else {
     localItem.value = {
       productId: null,
@@ -86,6 +200,7 @@ watch(() => props.item, (newVal) => {
       quantity: 0,
       unitPrice: 0
     }
+    selectedProductOption.value = null
   }
 }, { immediate: true, deep: true })
 
@@ -116,6 +231,11 @@ const handleSave = () => {
 
   emit('close', localItem.value)
 }
+
+// ✅ Carica prodotti al mount
+onMounted(() => {
+  loadProducts()
+})
 </script>
 
 <style scoped lang="scss">

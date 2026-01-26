@@ -22,3 +22,9 @@ body {
 .text-primary{
   color: $primary!important;
 }
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}

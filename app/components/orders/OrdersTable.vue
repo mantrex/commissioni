@@ -74,6 +74,16 @@
         </q-td>
       </template>
 
+      <!-- Colonna presenza fattura -->
+      <template v-slot:body-cell-hasInvoice="props">
+        <q-td :props="props" class="text-center">
+          <q-icon v-if="props.row.hasInvoice" name="circle" color="positive" size="12px">
+            <q-tooltip>Fattura esistente</q-tooltip>
+          </q-icon>
+          <span v-else class="text-grey-5">—</span>
+        </q-td>
+      </template>
+
       <!-- Colonna stato con badge colorato -->
     
       <template v-slot:body-cell-status="props">
@@ -211,6 +221,14 @@ const columns = [
     sortable: true
   },
   {
+    name: 'hasInvoice',
+    label: 'FAT',
+    align: 'center',
+    field: 'hasInvoice',
+    sortable: false,
+    style: 'width: 60px'
+  },
+  {
     name: 'status',
     label: 'Posizione',
     align: 'center',
@@ -243,7 +261,7 @@ const columns = [
 // Colonne visibili (esclude quelle non necessarie)
 const visibleColumns = computed(() => [
   'commNum', 'date', 'agent', 'vip', 'clientLastname', 'clientFirstname',
-  'country', 'city', 'dueDate', 'status', 'ca', 'rd', 'ric'
+  'country', 'city', 'dueDate', 'hasInvoice', 'status', 'ca', 'rd', 'ric', 
 ])
 
 // Utility functions

@@ -145,23 +145,25 @@
           <q-card flat bordered class="financial-card">
             <q-card-section class="section-header">
               <q-icon name="euro" size="18px" />
-              <span>Dati Finanziari</span>
+              <span>Totale fattura</span>
             </q-card-section>
             <q-card-section class="compact-section">
               <div class="compact-grid">
                 <q-input v-model.number="invoiceData.financial.taxable" label="Imponibile" type="number" outlined dense
-                  step="0.01" prefix="€" />
+                  step="0.01" >
+                  
+              </q-input>
                 <q-checkbox v-model="invoiceData.financial.hasVat" label="IVA SI/NO" dense />
                 <q-input v-model.number="invoiceData.financial.vatRate" label="% IVA" type="number" outlined dense
                   :disable="!invoiceData.financial.hasVat" />
                 <q-input :model-value="invoiceData.financial.vatAmount" label="Importo IVA" outlined dense readonly
-                  prefix="€" />
-                <q-input :model-value="invoiceData.financial.total" label="Totale" outlined dense readonly prefix="€"
+                   />
+                <q-input :model-value="invoiceData.financial.total" label="Totale" outlined dense readonly 
                   class="text-weight-bold" />
                 <q-input v-model.number="invoiceData.financial.deposit" label="Acconto" type="number" outlined dense
-                  step="0.01" prefix="€" />
+                  step="0.01"  />
                 <q-input v-model.number="invoiceData.financial.cod" label="Cod" type="number" outlined dense step="0.01"
-                  prefix="€" />
+                   />
               </div>
             </q-card-section>
           </q-card>
@@ -337,6 +339,26 @@ watch(() => [invoiceData.financial.taxable, invoiceData.financial.hasVat, invoic
   invoiceData.financial.total = invoiceData.financial.taxable + invoiceData.financial.vatAmount
 }, { deep: true })
 
+watch(() => invoiceData.items, () => {
+  // Calcola la somma di (quantità × prezzo unitario) di tutti gli articoli
+  const totalTaxable = invoiceData.items.reduce((sum, item) => {
+    return sum + ((item.quantity || 0) * (item.unitPrice || 0))
+  }, 0)
+
+  // Arrotonda a 2 decimali
+  invoiceData.financial.taxable = Math.round(totalTaxable * 100) / 100
+}, { deep: true })
+
+// Il watch esistente per IVA e Totale rimarrà così com'è:
+watch(() => [invoiceData.financial.taxable, invoiceData.financial.hasVat, invoiceData.financial.vatRate], () => {
+  if (invoiceData.financial.hasVat) {
+    invoiceData.financial.vatAmount = Math.round((invoiceData.financial.taxable * invoiceData.financial.vatRate) / 100 * 100) / 100
+  } else {
+    invoiceData.financial.vatAmount = 0
+  }
+  invoiceData.financial.total = Math.round((invoiceData.financial.taxable + invoiceData.financial.vatAmount) * 100) / 100
+}, { deep: true })
+
 // Dialogs
 const dialogs = reactive({
   package: {
@@ -472,13 +494,39 @@ const populateFromOrder = (order) => {
   }
 }
 
-// Handlers
-const handleBack = () => {
-  if (invoiceData.invoiceData.orderId) {
-    router.push(`/orders/${invoiceData.invoiceData.orderId}`)
-  } else {
-    router.push('/invoices')
+// ========================================
+// FIX DEFINITIVO: handleBack in /app/pages/invoices/edit.vue
+// Il problema: orderId può essere un OGGETTO popolato invece di una stringa
+// ========================================
+
+const handleBack = async () => {
+  // ✅ Estrai l'ID correttamente (può essere stringa O oggetto popolato)
+  const orderIdValue = typeof invoiceData.invoiceData.orderId === 'object'
+    ? invoiceData.invoiceData.orderId?._id
+    : invoiceData.invoiceData.orderId
+
+  // ✅ CASO 1: Fattura ha orderId valido - Vai all'ordine
+  if (orderIdValue) {
+    router.push(`/orders/${orderIdValue}`)
+    return
   }
+
+  // ✅ CASO 2: Fattura legacy senza orderId ma con commNum - Cerca ordine per commNum
+  if (invoiceData.invoiceData.commNum) {
+    try {
+      const response = await $fetch(`/api/orders/by-commnum/${invoiceData.invoiceData.commNum}`)
+
+      if (response?.order?._id) {
+        router.push(`/orders/${response.order._id}`)
+        return
+      }
+    } catch (err) {
+      console.log('⚠️ Ordine non trovato per commNum:', invoiceData.invoiceData.commNum)
+    }
+  }
+
+  // ✅ CASO 3: Fallback - Vai alla lista fatture
+  router.push('/invoices')
 }
 
 const handleCancel = () => {
@@ -499,9 +547,8 @@ const handlePrint = () => {
     return
   }
 
-  // Apri la pagina di stampa in una nuova finestra
-  const printUrl = `/invoices/print/${invoiceId.value}`
-  window.open(printUrl, '_blank')
+  // ✅ NAVIGA alla pagina di stampa (stessa finestra)
+  router.push(`/invoices/print/${invoiceId.value}`)
 }
 
 // ========================================
@@ -651,10 +698,12 @@ onMounted(() => {
 }
 
 .invoice-edit-container {
-  max-width: 1800px;
+  max-width: 1600px;
   margin: 0 auto;
-  padding: 8px;
+  position:relative
 }
+
+
 
 // Header sticky
 .invoice-header-sticky {
@@ -918,4 +967,6 @@ onMounted(() => {
     }
   }
 }
+
+
 </style>

@@ -187,9 +187,9 @@ export async function migrateOrders(mysqlConn, clientsMap, agentsMap, productsMa
             items.push({
               productId,
               quantity: itemRow.QuantitàVend || 0,
-              ready: itemRow.Pronto === 1,
-              invoiced,
-              ordered: itemRow.Ordinato === 1
+              ready: itemRow.Pronto == null ? true : false,      // NULL = true
+              ordered: itemRow.Ordinato == null ? true : false,  // NULL = true  
+              invoiced: itemRow.Fatturato == null ? true : false // NULL = true
             })
           }
         }

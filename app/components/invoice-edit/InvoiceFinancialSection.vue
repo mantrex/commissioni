@@ -3,7 +3,7 @@
     <q-card-section class="section-header">
       <div class="header-left">
         <q-icon name="euro" size="20px" />
-        <span>Dati Finanziari</span>
+        <span>Totale fattura</span>
       </div>
     </q-card-section>
 
