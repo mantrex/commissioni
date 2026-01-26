@@ -20,10 +20,12 @@ export default defineEventHandler(async (event) => {
     }
 
     // Genera ID fattura se non presente
-    let invoiceId = body.invoiceId
+    let invoiceId = body.invoiceData?.invoiceId || body.invoiceId
     if (!invoiceId) {
       invoiceId = await generateInvoiceId()
     }
+
+    console.log('📄 Creazione fattura con ID:', invoiceId)
 
     // Prepara dati fattura
     const invoiceData = {
@@ -97,16 +99,47 @@ export default defineEventHandler(async (event) => {
   }
 })
 
-// Genera ID fattura progressivo
+// ✅ Genera ID fattura progressivo - GESTISCE ID LEGACY ALFANUMERICI
 async function generateInvoiceId() {
-  const lastInvoice = await Invoice.findOne().sort({ invoiceId: -1 }).lean()
+  try {
+    // Trova tutte le fatture e filtra solo quelle con ID numerici
+    const allInvoices = await Invoice.find()
+      .select('invoiceId createdAt')
+      .sort({ createdAt: -1 })
+      .lean()
 
-  if (!lastInvoice || !lastInvoice.invoiceId) {
-    return '00001'
+    console.log('🔍 Fatture totali nel DB:', allInvoices.length)
+
+    // Filtra solo gli ID numerici validi e trova il massimo
+    const numericIds = allInvoices
+      .map(inv => {
+        const num = parseInt(inv.invoiceId, 10)
+        return isNaN(num) ? null : num
+      })
+      .filter(num => num !== null)
+
+    console.log('🔢 ID numerici trovati:', numericIds)
+
+    if (numericIds.length === 0) {
+      // Nessun ID numerico trovato, inizia da 1
+      console.log('✨ Prima fattura numerica - genero 00001')
+      return '00001'
+    }
+
+    // Trova il massimo tra gli ID numerici
+    const maxNum = Math.max(...numericIds)
+    const newNum = maxNum + 1
+    const newId = String(newNum).padStart(5, '0')
+
+    console.log(`✅ Massimo ID numerico: ${maxNum}, nuovo ID: ${newId}`)
+
+    return newId
+
+  } catch (error) {
+    console.error('❌ Errore in generateInvoiceId:', error)
+    // In caso di errore, usa timestamp come fallback
+    const fallbackId = String(Date.now()).slice(-5)
+    console.log('⚠️ Usando ID fallback:', fallbackId)
+    return fallbackId
   }
-
-  const lastNum = parseInt(lastInvoice.invoiceId)
-  const newNum = lastNum + 1
-
-  return String(newNum).padStart(5, '0')
 }

@@ -15,6 +15,10 @@
             </span>
           </div>
           <div class="header-actions">
+            <q-btn flat dense label="Stampa" icon="print" @click="handlePrint" :disable="isNew"
+              class="action-btn print-btn">
+              <q-tooltip v-if="isNew">Salva prima la fattura per stamparla</q-tooltip>
+            </q-btn>
             <q-btn flat dense label="Annulla" @click="handleCancel" class="action-btn cancel-btn" />
             <q-btn flat dense label="Salva" icon="save" @click="handleSave" :loading="saving"
               class="action-btn save-btn" />
@@ -453,8 +457,8 @@ const populateFromOrder = (order) => {
       const mapped = {
         productId: item.productId?._id || item.productId || null,
         orderItemId: item._id,
-        code: item.code || '',
-        description: item.description || '',
+        code: item.productId?.code || item.code || '',
+        description: item.productId?.name || item.description || '',
         quantity: item.quantity || 0,
         unitPrice: 0
       }
@@ -470,8 +474,8 @@ const populateFromOrder = (order) => {
 
 // Handlers
 const handleBack = () => {
-  if (commNum.value) {
-    router.push(`/orders/${commNum.value}`)
+  if (invoiceData.invoiceData.orderId) {
+    router.push(`/orders/${invoiceData.invoiceData.orderId}`)
   } else {
     router.push('/invoices')
   }
@@ -485,6 +489,25 @@ const handleCancel = () => {
     persistent: true
   }).onOk(() => handleBack())
 }
+
+const handlePrint = () => {
+  if (isNew.value) {
+    $q.notify({
+      type: 'warning',
+      message: 'Salva prima la fattura per poterla stampare'
+    })
+    return
+  }
+
+  // Apri la pagina di stampa in una nuova finestra
+  const printUrl = `/invoices/print/${invoiceId.value}`
+  window.open(printUrl, '_blank')
+}
+
+// ========================================
+// MODIFICA: handleSave - RIMANI SULLA PAGINA
+// Sostituisci la funzione handleSave in /app/pages/invoices/edit.vue
+// ========================================
 
 const handleSave = async () => {
   saving.value = true
@@ -501,15 +524,58 @@ const handleSave = async () => {
     }
 
     if (isNew.value) {
-      await $fetch('/api/invoices', { method: 'POST', body: payload })
-      $q.notify({ type: 'positive', message: 'Fattura creata con successo' })
+      // ✅ POST - Crea nuova fattura
+      const { data, error } = await useFetch('/api/invoices', {
+        method: 'POST',
+        body: payload
+      })
+
+      if (error.value) {
+        throw new Error(error.value.message)
+      }
+
+      $q.notify({
+        type: 'positive',
+        message: 'Fattura creata con successo'
+      })
+
+      // ✅ MODIFICA: Cambia URL senza ricaricare la pagina
+      if (data.value?.invoice?._id) {
+        invoiceData.invoiceId = data.value.invoice.invoiceId
+
+        // Cambia URL da /invoices/edit?commNum=X a /invoices/edit?id=Y
+        router.replace(`/invoices/edit?id=${data.value.invoice._id}`)
+      }
+
     } else {
-      await $fetch(`/api/invoices/${invoiceId.value}`, { method: 'PUT', body: payload })
-      $q.notify({ type: 'positive', message: 'Fattura aggiornata con successo' })
+      // ✅ PUT - Aggiorna fattura esistente
+      const { data, error } = await useFetch(`/api/invoices/${invoiceId.value}`, {
+        method: 'PUT',
+        body: payload
+      })
+
+      if (error.value) {
+        throw new Error(error.value.message)
+      }
+
+      $q.notify({
+        type: 'positive',
+        message: 'Fattura salvata con successo'
+      })
+
+      // ✅ MODIFICA: NON fare handleBack() - rimani sulla pagina
+      // Opzionalmente ricarica i dati per sicurezza
+      if (data.value?.invoice) {
+        populateInvoiceData(data.value.invoice)
+      }
     }
-    handleBack()
+
   } catch (err) {
-    $q.notify({ type: 'negative', message: 'Errore nel salvataggio', caption: err.message })
+    $q.notify({
+      type: 'negative',
+      message: 'Errore nel salvataggio',
+      caption: err.message
+    })
   } finally {
     saving.value = false
   }
@@ -645,6 +711,20 @@ onMounted(() => {
 
         &:hover {
           background: color.adjust($primary, $lightness: -10%);
+        }
+      }
+
+      .print-btn {
+        background: transparent;
+        color: $primary;
+        border: 1px solid $primary;
+
+        &:hover:not(:disabled) {
+          background: rgba($primary, 0.1);
+        }
+
+        &:disabled {
+          opacity: 0.5;
         }
       }
     }

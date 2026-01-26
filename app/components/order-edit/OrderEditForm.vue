@@ -364,9 +364,9 @@ const handleItemDialogClose = async (savedItem) => {
         code: item.code || '',
         description: item.description || '',
         quantity: item.quantity || 0,
-        ready: item.ready || false,
-        invoiced: item.invoiced || 0,
-        ordered: item.ordered || false,
+        ready: item.ready ?? false,
+        invoiced: item.invoiced ?? 0,
+        ordered: item.ordered ?? false,
         note: item.note || ''
       })),
       financial: {
