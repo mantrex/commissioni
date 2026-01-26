@@ -251,7 +251,7 @@ const handleInvoice = () => {
   }
 
   // Naviga alla pagina fattura con il numero commissione
-  router.push(`/invoices/new?commNum=${orderData.commNum}`)
+  router.push(`/invoices/edit?commNum=${orderData.commNum}`)
 }
 
 const handleSave = async () => {

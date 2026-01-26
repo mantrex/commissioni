@@ -1,21 +1,19 @@
 <template>
   <q-page class="invoice-edit-page">
     <div class="invoice-edit-container">
-      <!-- ✅ HEADER STICKY come commissioni -->
+      <!-- ✅ HEADER STICKY -->
       <div class="invoice-header-sticky">
         <div class="header-content">
           <div class="header-left">
             <q-btn flat dense round icon="arrow_back" @click="handleBack" size="sm" class="back-btn">
               <q-tooltip>Torna indietro</q-tooltip>
             </q-btn>
-
             <span class="invoice-info">
               Fattura {{ isNew ? 'Nuova' : invoiceData.invoiceId }}
               <span v-if="commNum" class="separator">•</span>
               <span v-if="commNum" class="comm-ref">Comm. {{ commNum }}</span>
             </span>
           </div>
-
           <div class="header-actions">
             <q-btn flat dense label="Annulla" @click="handleCancel" class="action-btn cancel-btn" />
             <q-btn flat dense label="Salva" icon="save" @click="handleSave" :loading="saving"
@@ -27,31 +25,211 @@
       <!-- Spacer -->
       <div class="header-spacer"></div>
 
-      <!-- Griglia principale -->
-      <div class="invoice-grid">
-        <!-- Dati Cliente -->
-        <InvoiceClientSection v-model:client="invoiceData.client" />
+      <!-- 🎯 LAYOUT COMPATTO - 2 COLONNE IN ALTO -->
+      <div class="top-section">
+        <!-- COLONNA SINISTRA: Cliente + Pacchi -->
+        <div class="left-column">
+          <!-- Cliente -->
+          <q-card flat bordered class="client-card">
+            <q-card-section class="section-header">
+              <q-icon name="person" size="18px" />
+              <span>Dati Cliente</span>
+            </q-card-section>
+            <q-card-section class="compact-section">
+              <div class="compact-grid">
+                <q-input v-model="invoiceData.client.lastname" label="Cognome" outlined dense />
+                <q-input v-model="invoiceData.client.firstname" label="Nome" outlined dense />
+                <q-input v-model="invoiceData.client.title" label="Titolo" outlined dense class="span-2" />
+                <q-input v-model="invoiceData.client.company" label="Ditta" outlined dense class="span-2" />
+                <q-input v-model="invoiceData.client.address" label="Indirizzo" outlined dense class="span-2" />
+                <q-input v-model="invoiceData.client.cap" label="CAP" outlined dense />
+                <q-input v-model="invoiceData.client.city" label="Città" outlined dense />
+                <q-input v-model="invoiceData.client.region" label="Prov" outlined dense />
+                <q-input v-model="invoiceData.client.state" label="Paese" outlined dense />
+                <q-input v-model="invoiceData.client.tel" label="Tel" outlined dense class="span-2" />
+                <q-input v-model="invoiceData.client.piva" label="P.IVA" outlined dense class="span-2" />
+              </div>
+            </q-card-section>
+          </q-card>
 
-        <!-- Dati Fattura -->
-        <InvoiceDataSection v-model:data="invoiceData.invoiceData" />
+          <!-- Imballo e Pacchi -->
+          <q-card flat bordered class="packing-card">
+            <q-card-section class="section-header">
+              <q-icon name="inventory" size="18px" />
+              <span>Imballo e Pacchi</span>
+            </q-card-section>
+            <q-card-section class="compact-section">
+              <div class="compact-grid">
+                <q-input v-model="invoiceData.packing.made" label="Made" outlined dense />
+                <q-input v-model="invoiceData.packing.whoMakes" label="Chi Fa" outlined dense />
+                <q-input v-model.number="invoiceData.packing.numPackages" label="N.Pacchi" type="number" outlined
+                  dense />
+                <q-input v-model="invoiceData.packing.packageSize" label="Mis" outlined dense />
+                <q-input v-model.number="invoiceData.packing.grossWeight" label="P.Lordo" type="number" outlined dense
+                  step="0.01" />
+                <q-input v-model.number="invoiceData.packing.netWeight" label="P.Netto" type="number" outlined dense
+                  step="0.01" />
+                <q-input v-model="invoiceData.packing.conai" label="Conai" outlined dense class="span-2" />
+              </div>
 
-        <!-- Scontrini -->
-        <InvoiceReceiptsSection v-model:receipts="invoiceData.receipts" />
+              <!-- Lista Pacchi compatta -->
+              <div class="packages-list q-mt-sm" v-if="invoiceData.packages.length > 0">
+                <div class="packages-header">
+                  <span class="text-caption text-weight-medium">Pacchi ({{ invoiceData.packages.length }})</span>
+                  <q-btn flat dense size="sm" icon="add" color="primary" @click="handleAddPackage">
+                    <q-tooltip>Aggiungi pacco</q-tooltip>
+                  </q-btn>
+                </div>
+                <div class="package-item" v-for="(pkg, index) in invoiceData.packages" :key="index">
+                  <span class="text-caption">{{ pkg.size1 }}x{{ pkg.size2 }}x{{ pkg.size3 }} cm - {{ pkg.grossWeight
+                    }}kg</span>
+                  <div>
+                    <q-btn flat dense size="xs" round icon="edit" @click="handleEditPackage(pkg, index)" />
+                    <q-btn flat dense size="xs" round icon="delete" color="negative"
+                      @click="handleRemovePackage(index)" />
+                  </div>
+                </div>
+              </div>
+              <q-btn v-else flat dense size="sm" icon="add" label="Aggiungi pacco" color="primary"
+                @click="handleAddPackage" class="full-width q-mt-sm" />
+            </q-card-section>
+          </q-card>
+        </div>
 
-        <!-- Articoli/Voci Fattura -->
-        <InvoiceItemsSection v-model:items="invoiceData.items" @add-item="handleAddInvoiceItem"
-          @edit-item="handleEditInvoiceItem" @remove-item="handleRemoveInvoiceItem" />
+        <!-- COLONNA DESTRA: Dati Fattura + Scontrini + Dati Finanziari -->
+        <div class="right-column">
+          <!-- Dati Fattura -->
+          <q-card flat bordered class="data-card">
+            <q-card-section class="section-header">
+              <q-icon name="description" size="18px" />
+              <span>Dati Fattura</span>
+            </q-card-section>
+            <q-card-section class="compact-section">
+              <div class="compact-grid">
+                <q-input v-model="invoiceData.invoiceData.invoiceDate" label="Data Fattura" type="date" outlined dense
+                  class="span-2" />
+                <q-input v-model="invoiceData.invoiceData.commNum" label="Comm" outlined dense readonly />
+                <q-select v-model="invoiceData.invoiceData.payment" label="Pagamento" :options="[]" outlined dense
+                  emit-value map-options />
+                <q-select v-model="invoiceData.invoiceData.shipping" label="Spedizione" :options="[]" outlined dense
+                  emit-value map-options />
+                <q-select v-model="invoiceData.invoiceData.insurance" label="Assicura" :options="[]" outlined dense
+                  emit-value map-options />
+                <q-input v-model="invoiceData.invoiceData.notes" label="Note" outlined dense type="textarea" rows="2"
+                  class="span-2" />
+                <q-checkbox v-model="invoiceData.invoiceData.issued" label="Fattura Emessa" dense class="span-2" />
+              </div>
+            </q-card-section>
+          </q-card>
 
-        <!-- Dati Finanziari -->
-        <InvoiceFinancialSection v-model:financial="invoiceData.financial" />
+          <!-- Scontrini -->
+          <q-card flat bordered class="receipts-card">
+            <q-card-section class="section-header">
+              <q-icon name="receipt" size="18px" />
+              <span>Scontrini</span>
+            </q-card-section>
+            <q-card-section class="compact-section">
+              <div class="receipt-row" v-for="(receipt, index) in invoiceData.receipts" :key="index">
+                <span class="receipt-label">N.Sc. {{ index + 1 }}</span>
+                <q-input v-model="receipt.number" placeholder="Numero" outlined dense class="receipt-input" />
+                <q-input v-model="receipt.date" type="date" placeholder="Data" outlined dense class="receipt-input" />
+              </div>
+            </q-card-section>
+          </q-card>
 
-        <!-- Imballo -->
-        <InvoicePackingSection v-model:packing="invoiceData.packing" v-model:packages="invoiceData.packages"
-          @add-package="handleAddPackage" @edit-package="handleEditPackage" @remove-package="handleRemovePackage" />
-
-        <!-- Etichetta Spedizione -->
-        <InvoiceShippingLabelSection v-model:label="invoiceData.shippingLabel" />
+          <!-- Dati Finanziari -->
+          <q-card flat bordered class="financial-card">
+            <q-card-section class="section-header">
+              <q-icon name="euro" size="18px" />
+              <span>Dati Finanziari</span>
+            </q-card-section>
+            <q-card-section class="compact-section">
+              <div class="compact-grid">
+                <q-input v-model.number="invoiceData.financial.taxable" label="Imponibile" type="number" outlined dense
+                  step="0.01" prefix="€" />
+                <q-checkbox v-model="invoiceData.financial.hasVat" label="IVA SI/NO" dense />
+                <q-input v-model.number="invoiceData.financial.vatRate" label="% IVA" type="number" outlined dense
+                  :disable="!invoiceData.financial.hasVat" />
+                <q-input :model-value="invoiceData.financial.vatAmount" label="Importo IVA" outlined dense readonly
+                  prefix="€" />
+                <q-input :model-value="invoiceData.financial.total" label="Totale" outlined dense readonly prefix="€"
+                  class="text-weight-bold" />
+                <q-input v-model.number="invoiceData.financial.deposit" label="Acconto" type="number" outlined dense
+                  step="0.01" prefix="€" />
+                <q-input v-model.number="invoiceData.financial.cod" label="Cod" type="number" outlined dense step="0.01"
+                  prefix="€" />
+              </div>
+            </q-card-section>
+          </q-card>
+        </div>
       </div>
+
+      <!-- ARTICOLI - TABELLA FULL WIDTH -->
+      <q-card flat bordered class="items-card q-mt-md">
+        <q-card-section class="section-header">
+          <div class="header-left-items">
+            <q-icon name="inventory_2" size="18px" />
+            <span>Voci Fattura</span>
+            <q-chip v-if="invoiceData.items.length > 0" dense color="primary" text-color="white" size="sm">
+              {{ invoiceData.items.length }}
+            </q-chip>
+          </div>
+          <q-btn color="primary" icon="add" label="Aggiungi" unelevated dense size="sm" @click="handleAddInvoiceItem" />
+        </q-card-section>
+        <q-card-section class="q-pa-none">
+          <q-table flat :rows="invoiceData.items" :columns="itemColumns" row-key="_id" dense
+            :rows-per-page-options="[0]" hide-pagination class="items-table">
+
+            <template v-slot:body-cell-actions="props">
+              <q-td :props="props">
+                <q-btn flat dense round icon="edit" size="sm" color="primary"
+                  @click="handleEditInvoiceItem(props.row, props.rowIndex)" />
+                <q-btn flat dense round icon="delete" size="sm" color="negative"
+                  @click="handleRemoveInvoiceItem(props.rowIndex)" />
+              </q-td>
+            </template>
+
+            <template v-slot:body-cell-unitPrice="props">
+              <q-td :props="props" class="text-right">
+                {{ formatCurrency(props.row.unitPrice) }}
+              </q-td>
+            </template>
+
+            <template v-slot:body-cell-total="props">
+              <q-td :props="props" class="text-right text-weight-bold">
+                {{ formatCurrency((props.row.quantity || 0) * (props.row.unitPrice || 0)) }}
+              </q-td>
+            </template>
+
+            <template v-slot:no-data>
+              <div class="full-width row flex-center q-pa-md text-grey-7">
+                <q-icon size="2em" name="inventory_2" class="q-mr-sm" />
+                <span>Nessuna voce. Clicca "Aggiungi" per inserirne una.</span>
+              </div>
+            </template>
+          </q-table>
+        </q-card-section>
+      </q-card>
+
+      <!-- Etichetta Spedizione -->
+      <q-card flat bordered class="shipping-card q-mt-md">
+        <q-card-section class="section-header">
+          <q-icon name="local_shipping" size="18px" />
+          <span>Etichetta Spedizione</span>
+        </q-card-section>
+        <q-card-section class="compact-section">
+          <div class="compact-grid">
+            <q-input v-model="invoiceData.shippingLabel.line1" label="Riga 1" outlined dense class="span-2" />
+            <q-input v-model="invoiceData.shippingLabel.line2" label="Riga 2" outlined dense class="span-2" />
+            <q-input v-model="invoiceData.shippingLabel.line3" label="Riga 3" outlined dense class="span-2" />
+            <q-input v-model="invoiceData.shippingLabel.line4" label="Riga 4" outlined dense class="span-2" />
+            <q-input v-model="invoiceData.shippingLabel.tel" label="Tel" outlined dense />
+            <q-input v-model="invoiceData.shippingLabel.content" label="Contenuto" outlined dense />
+            <q-input v-model="invoiceData.shippingLabel.netWeight" label="P.Netto" outlined dense />
+            <q-input v-model="invoiceData.shippingLabel.grossWeight" label="P.Lordo" outlined dense />
+          </div>
+        </q-card-section>
+      </q-card>
     </div>
 
     <!-- Dialog Pacchi -->
@@ -69,17 +247,10 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useQuasar } from 'quasar'
 import ComponentDialog from '~/components/common/ComponentDialog.vue'
-import InvoiceClientSection from '~/components/invoice-edit/InvoiceClientSection.vue'
-import InvoiceDataSection from '~/components/invoice-edit/InvoiceDataSection.vue'
-import InvoiceReceiptsSection from '~/components/invoice-edit/InvoiceReceiptsSection.vue'
-import InvoiceItemsSection from '~/components/invoice-edit/InvoiceItemsSection.vue'
-import InvoiceFinancialSection from '~/components/invoice-edit/InvoiceFinancialSection.vue'
-import InvoicePackingSection from '~/components/invoice-edit/InvoicePackingSection.vue'
-import InvoiceShippingLabelSection from '~/components/invoice-edit/InvoiceShippingLabelSection.vue'
 import PackageDialog from '~/components/invoice-edit/PackageDialog.vue'
 import InvoiceItemDialog from '~/components/invoice-edit/InvoiceItemDialog.vue'
 
@@ -152,6 +323,16 @@ const invoiceData = reactive({
   }
 })
 
+// Auto-calcolo IVA e Totale
+watch(() => [invoiceData.financial.taxable, invoiceData.financial.hasVat, invoiceData.financial.vatRate], () => {
+  if (invoiceData.financial.hasVat) {
+    invoiceData.financial.vatAmount = (invoiceData.financial.taxable * invoiceData.financial.vatRate) / 100
+  } else {
+    invoiceData.financial.vatAmount = 0
+  }
+  invoiceData.financial.total = invoiceData.financial.taxable + invoiceData.financial.vatAmount
+}, { deep: true })
+
 // Dialogs
 const dialogs = reactive({
   package: {
@@ -166,40 +347,50 @@ const dialogs = reactive({
   }
 })
 
+// Colonne tabella articoli
+const itemColumns = [
+  { name: 'code', label: 'Cod. Art.', align: 'left', field: 'code', style: 'width: 120px' },
+  { name: 'description', label: 'Descrizione', align: 'left', field: 'description', style: 'min-width: 250px' },
+  { name: 'quantity', label: 'Q.', align: 'center', field: 'quantity', style: 'width: 80px' },
+  { name: 'unitPrice', label: 'Prezzo Un.', align: 'right', field: 'unitPrice', style: 'width: 120px' },
+  { name: 'total', label: 'Totale', align: 'right', field: row => (row.quantity || 0) * (row.unitPrice || 0), style: 'width: 120px' },
+  { name: 'actions', label: 'Azioni', align: 'center', style: 'width: 100px' }
+]
+
+const formatCurrency = (value) => {
+  if (value === null || value === undefined) return '€ 0,00'
+  return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value)
+}
+
 // Load invoice data
 const loadInvoice = async () => {
   if (isNew.value && !commNum.value) return
 
   try {
     if (!isNew.value) {
-      // Carica fattura esistente
       const { data, error } = await useFetch(`/api/invoices/${invoiceId.value}`)
-
-      if (error.value) {
-        throw new Error(error.value.message)
-      }
-
-      const invoice = data.value.invoice
-      populateInvoiceData(invoice)
-
+      if (error.value) throw new Error(error.value.message)
+      populateInvoiceData(data.value.invoice)
     } else if (commNum.value) {
-      // Carica dati da commissione
+      console.log('🔍 Caricamento ordine per commNum:', commNum.value)
       const { data, error } = await useFetch(`/api/orders/by-commnum/${commNum.value}`)
 
       if (error.value) {
+        console.error('❌ Errore caricamento ordine:', error.value)
         throw new Error(error.value.message)
       }
 
+      console.log('✅ Ordine caricato:', data.value.order)
       const order = data.value.order
-      populateFromOrder(order)
-    }
+      console.log('📦 Items nell\'ordine:', order.items?.length || 0)
+      console.log('✔️ Items con invoiced=true:', order.items?.filter(i => i.invoiced)?.length || 0)
 
+      populateFromOrder(order)
+
+      console.log('📋 Items caricati in fattura:', invoiceData.items.length)
+    }
   } catch (err) {
-    $q.notify({
-      type: 'negative',
-      message: 'Errore nel caricamento',
-      caption: err.message
-    })
+    $q.notify({ type: 'negative', message: 'Errore nel caricamento', caption: err.message })
   }
 }
 
@@ -213,11 +404,9 @@ const populateInvoiceData = (invoice) => {
   invoiceData.invoiceData.insurance = invoice.insurance || ''
   invoiceData.invoiceData.notes = invoice.notes || ''
   invoiceData.invoiceData.issued = invoice.issued || false
-
   invoiceData.client = { ...invoice.client }
   invoiceData.receipts = invoice.receipts && invoice.receipts.length > 0 ? invoice.receipts : Array(3).fill(null).map(() => ({ number: '', date: null }))
   invoiceData.items = invoice.items || []
-
   invoiceData.financial = {
     taxable: invoice.taxable || 0,
     hasVat: invoice.hasVat ?? true,
@@ -227,32 +416,14 @@ const populateInvoiceData = (invoice) => {
     deposit: invoice.deposit || 0,
     cod: invoice.cod || 0
   }
-
-  invoiceData.packing = invoice.packing || {
-    made: '',
-    whoMakes: '',
-    numPackages: 0,
-    packageSize: '',
-    grossWeight: 0,
-    netWeight: 0,
-    conai: ''
-  }
-
+  invoiceData.packing = invoice.packing || {}
   invoiceData.packages = invoice.packages || []
-  invoiceData.shippingLabel = invoice.shippingLabel || {
-    line1: '',
-    line2: '',
-    line3: '',
-    line4: '',
-    tel: '',
-    content: '',
-    netWeight: '',
-    grossWeight: ''
-  }
+  invoiceData.shippingLabel = invoice.shippingLabel || {}
 }
 
 const populateFromOrder = (order) => {
-  // Popola dati cliente da ordine
+  console.log('🔄 populateFromOrder chiamata con:', order)
+
   if (order.clientId) {
     invoiceData.client = {
       clientId: order.clientId._id,
@@ -268,26 +439,36 @@ const populateFromOrder = (order) => {
       tel: order.clientId.tel || '',
       piva: order.clientId.piva || ''
     }
+    console.log('👤 Cliente popolato:', invoiceData.client)
   }
 
   invoiceData.invoiceData.orderId = order._id
   invoiceData.invoiceData.commNum = order.commNum
 
-  // Carica solo articoli fatturati
   if (order.items && order.items.length > 0) {
-    invoiceData.items = order.items
-      .filter(item => item.invoiced)
-      .map(item => ({
+    const invoicedItems = order.items.filter(item => item.invoiced)
+    console.log('📦 Filtraggio items - Totali:', order.items.length, 'Fatturati:', invoicedItems.length)
+
+    invoiceData.items = invoicedItems.map(item => {
+      const mapped = {
         productId: item.productId?._id || item.productId || null,
         orderItemId: item._id,
         code: item.code || '',
         description: item.description || '',
         quantity: item.quantity || 0,
         unitPrice: 0
-      }))
+      }
+      console.log('  → Item mappato:', mapped)
+      return mapped
+    })
+
+    console.log('✅ Items finali assegnati:', invoiceData.items)
+  } else {
+    console.log('⚠️ Nessun item nell\'ordine')
   }
 }
 
+// Handlers
 const handleBack = () => {
   if (commNum.value) {
     router.push(`/orders/${commNum.value}`)
@@ -302,65 +483,41 @@ const handleCancel = () => {
     message: 'Vuoi annullare le modifiche?',
     cancel: true,
     persistent: true
-  }).onOk(() => {
-    handleBack()
-  })
+  }).onOk(() => handleBack())
 }
 
 const handleSave = async () => {
-  // Validazione
-  if (!invoiceData.client.lastname && !invoiceData.client.company) {
-    $q.notify({
-      type: 'negative',
-      message: 'Cliente obbligatorio'
-    })
-    return
-  }
-
-  if (invoiceData.items.length === 0) {
-    $q.notify({
-      type: 'negative',
-      message: 'Inserisci almeno un articolo'
-    })
-    return
-  }
-
   saving.value = true
-
   try {
-    const endpoint = isNew.value ? '/api/invoices' : `/api/invoices/${invoiceId.value}`
-    const method = isNew.value ? 'POST' : 'PUT'
-
-    const { data, error } = await useFetch(endpoint, {
-      method,
-      body: invoiceData
-    })
-
-    if (error.value) {
-      throw new Error(error.value.message)
+    const payload = {
+      invoiceData: invoiceData.invoiceData,
+      client: invoiceData.client,
+      receipts: invoiceData.receipts.filter(r => r.number),
+      items: invoiceData.items,
+      financial: invoiceData.financial,
+      packing: invoiceData.packing,
+      packages: invoiceData.packages,
+      shippingLabel: invoiceData.shippingLabel
     }
 
-    $q.notify({
-      type: 'positive',
-      message: 'Fattura salvata con successo'
-    })
-
+    if (isNew.value) {
+      await $fetch('/api/invoices', { method: 'POST', body: payload })
+      $q.notify({ type: 'positive', message: 'Fattura creata con successo' })
+    } else {
+      await $fetch(`/api/invoices/${invoiceId.value}`, { method: 'PUT', body: payload })
+      $q.notify({ type: 'positive', message: 'Fattura aggiornata con successo' })
+    }
     handleBack()
-
   } catch (err) {
-    $q.notify({
-      type: 'negative',
-      message: 'Errore nel salvataggio',
-      caption: err.message
-    })
+    $q.notify({ type: 'negative', message: 'Errore nel salvataggio', caption: err.message })
   } finally {
     saving.value = false
   }
 }
 
-// Handlers Pacchi
+// Package handlers
 const handleAddPackage = () => {
-  dialogs.package.data = {}
+  dialogs.package.data = { size1: 0, size2: 0, size3: 0, grossWeight: 0, netWeight: 0 }
   dialogs.package.index = null
   dialogs.package.show = true
 }
@@ -371,35 +528,24 @@ const handleEditPackage = (pkg, index) => {
   dialogs.package.show = true
 }
 
-const handlePackageDialogClose = (savedPackage) => {
-  if (!savedPackage) {
-    dialogs.package.show = false
-    return
-  }
+const handleRemovePackage = (index) => {
+  invoiceData.packages.splice(index, 1)
+}
 
-  if (dialogs.package.index === null) {
-    invoiceData.packages.push(savedPackage)
-  } else {
-    invoiceData.packages.splice(dialogs.package.index, 1, savedPackage)
+const handlePackageDialogClose = (result) => {
+  if (result) {
+    if (dialogs.package.index !== null) {
+      invoiceData.packages[dialogs.package.index] = result
+    } else {
+      invoiceData.packages.push(result)
+    }
   }
-
   dialogs.package.show = false
 }
 
-const handleRemovePackage = (index) => {
-  $q.dialog({
-    title: 'Conferma',
-    message: 'Vuoi rimuovere questo pacco?',
-    cancel: true,
-    persistent: true
-  }).onOk(() => {
-    invoiceData.packages.splice(index, 1)
-  })
-}
-
-// Handlers Voci Fattura
+// Invoice item handlers
 const handleAddInvoiceItem = () => {
-  dialogs.invoiceItem.data = {}
+  dialogs.invoiceItem.data = { code: '', description: '', quantity: 0, unitPrice: 0 }
   dialogs.invoiceItem.index = null
   dialogs.invoiceItem.show = true
 }
@@ -410,30 +556,19 @@ const handleEditInvoiceItem = (item, index) => {
   dialogs.invoiceItem.show = true
 }
 
-const handleInvoiceItemDialogClose = (savedItem) => {
-  if (!savedItem) {
-    dialogs.invoiceItem.show = false
-    return
-  }
-
-  if (dialogs.invoiceItem.index === null) {
-    invoiceData.items.push(savedItem)
-  } else {
-    invoiceData.items.splice(dialogs.invoiceItem.index, 1, savedItem)
-  }
-
-  dialogs.invoiceItem.show = false
+const handleRemoveInvoiceItem = (index) => {
+  invoiceData.items.splice(index, 1)
 }
 
-const handleRemoveInvoiceItem = (index) => {
-  $q.dialog({
-    title: 'Conferma',
-    message: 'Vuoi rimuovere questa voce?',
-    cancel: true,
-    persistent: true
-  }).onOk(() => {
-    invoiceData.items.splice(index, 1)
-  })
+const handleInvoiceItemDialogClose = (result) => {
+  if (result) {
+    if (dialogs.invoiceItem.index !== null) {
+      invoiceData.items[dialogs.invoiceItem.index] = result
+    } else {
+      invoiceData.items.push(result)
+    }
+  }
+  dialogs.invoiceItem.show = false
 }
 
 onMounted(() => {
@@ -442,17 +577,20 @@ onMounted(() => {
 </script>
 
 <style scoped lang="scss">
+@use "sass:color";
+
 .invoice-edit-page {
   background: $bg-light;
   min-height: 100vh;
 }
 
 .invoice-edit-container {
-  max-width: 1600px;
+  max-width: 1800px;
   margin: 0 auto;
-  position: relative;
+  padding: 8px;
 }
 
+// Header sticky
 .invoice-header-sticky {
   position: fixed;
   top: 50px;
@@ -461,123 +599,243 @@ onMounted(() => {
   z-index: 999;
   background: $sticky-menu;
   border-bottom: 1px solid $border;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 
   .header-content {
-    max-width: 1600px;
+    max-width: 1800px;
     margin: 0 auto;
     padding: 8px 16px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 16px;
-    min-height: 40px;
-  }
-
-  .header-left {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex: 1;
-    min-width: 0;
-
-    .back-btn {
-      color: $text-primary;
-      flex-shrink: 0;
-    }
-
-    .invoice-info {
-      font-size: 15px;
-      font-weight: 600;
-      color: $text-primary;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-
-      .separator {
-        color: $text-secondary;
-        font-weight: 400;
-      }
-
-      .comm-ref {
-        font-weight: 400;
-        color: $text-secondary;
-      }
-    }
-  }
-
-  .header-actions {
-    display: flex;
-    gap: 4px;
-    flex-shrink: 0;
-
-    .action-btn {
-      font-size: 13px;
-      font-weight: 500;
-      padding: 6px 16px;
-      text-transform: none;
-      min-height: 32px;
-    }
-
-    .cancel-btn {
-      color: $negative;
-    }
-
-    .save-btn {
-      color: $primary;
-    }
-  }
-}
-
-.header-spacer {
-  height: 90px;
-}
-
-.invoice-grid {
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-@media (max-width: 768px) {
-  .invoice-header-sticky {
-    .header-content {
-      padding: 6px 12px;
-      gap: 8px;
-    }
 
     .header-left {
-      gap: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
 
       .invoice-info {
-        font-size: 14px;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 2px;
+        font-weight: 600;
+        font-size: 16px;
+        color: $text-primary;
 
         .separator {
-          display: none;
+          margin: 0 8px;
+          color: $text-secondary;
+        }
+
+        .comm-ref {
+          color: $primary;
         }
       }
     }
 
     .header-actions {
-      gap: 3px;
+      display: flex;
+      gap: 8px;
 
       .action-btn {
-        font-size: 12px;
-        padding: 5px 12px;
-        min-height: 28px;
+        font-size: 13px;
+        padding: 6px 16px;
       }
+
+      .save-btn {
+        background: $primary;
+        color: white;
+
+        &:hover {
+          background: color.adjust($primary, $lightness: -10%);
+        }
+      }
+    }
+  }
+}
+
+.header-spacer {
+  height: 60px;
+}
+
+// Layout 2 colonne
+.top-section {
+  display: grid;
+  grid-template-columns: 450px 1fr;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.left-column,
+.right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+// Sezioni compatte
+.section-header {
+  padding: 6px 12px !important;
+  background: $bg-light;
+  border-bottom: 1px solid $border;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  color: $text-primary;
+  min-height: 32px;
+
+  .header-left-items {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+  }
+}
+
+.compact-section {
+  padding: 8px !important;
+}
+
+.compact-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+
+  .span-2 {
+    grid-column: span 2;
+  }
+
+  :deep(.q-field) {
+    margin-bottom: 0;
+  }
+
+  :deep(.q-field__control) {
+    min-height: 32px;
+    height: 32px;
+  }
+
+  :deep(.q-field__label) {
+    font-size: 12px;
+  }
+
+  :deep(input),
+  :deep(textarea) {
+    font-size: 12px;
+  }
+}
+
+// Scontrini
+.receipt-row {
+  display: grid;
+  grid-template-columns: 60px 1fr 1fr;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 6px;
+
+  .receipt-label {
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .receipt-input {
+    :deep(.q-field__control) {
+      min-height: 32px;
+      height: 32px;
+    }
+  }
+}
+
+// Pacchi
+.packages-list {
+  border-top: 1px solid $border;
+  padding-top: 8px;
+
+  .packages-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+
+  .package-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 8px;
+    background: $bg-light;
+    border-radius: 4px;
+    margin-bottom: 4px;
+
+    &:hover {
+      background: color.adjust($bg-light, $lightness: -5%);
+    }
+  }
+}
+
+// Tabella articoli
+.items-card {
+  background: $contrast;
+}
+
+.items-table {
+  :deep(th) {
+    font-weight: 600;
+    font-size: 12px;
+    padding: 6px 8px;
+    background: $bg-light;
+  }
+
+  :deep(td) {
+    font-size: 12px;
+    padding: 4px 8px;
+  }
+
+  :deep(tbody tr:hover) {
+    background-color: rgba($primary, 0.05);
+  }
+}
+
+// Cards
+.client-card,
+.data-card,
+.receipts-card,
+.financial-card,
+.packing-card,
+.shipping-card {
+  background: $contrast;
+}
+
+// Responsive
+@media (max-width: 1200px) {
+  .top-section {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .invoice-header-sticky .header-content {
+    flex-direction: column;
+    gap: 8px;
+
+    .header-left,
+    .header-actions {
+      width: 100%;
+    }
+
+    .header-actions {
+      justify-content: flex-end;
     }
   }
 
   .header-spacer {
     height: 100px;
+  }
+
+  .compact-grid {
+    grid-template-columns: 1fr;
+
+    .span-2 {
+      grid-column: span 1;
+    }
   }
 }
 </style>
