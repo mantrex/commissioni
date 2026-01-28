@@ -31,7 +31,7 @@ import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import OrdersFilters from './OrdersFilters.vue'
 import OrdersTable from './OrdersTable.vue'
-
+const authStore = useAuthStore()
 const router = useRouter()
 const $q = useQuasar()
 
@@ -108,6 +108,10 @@ const loadOrders = async () => {
       throw new Error(error.value.message || 'Errore nel caricamento')
     }
 
+    if (!data.value) {
+      return;
+    }
+    
     orders.value = data.value.orders || []
     totalOrders.value = data.value.total || 0
     pagination.value.rowsNumber = totalOrders.value
@@ -174,7 +178,7 @@ const handleInvoice = () => {
 }
 
 const handleExit = () => {
-  // Gestito dal menu header
+  authStore.logout()
 }
 
 onMounted(() => {

@@ -174,6 +174,15 @@ import { ref, computed, watch } from 'vue'
 const { statuses: allStatuses, loadStatuses } = useStatuses()
 const statusOptions = ref([])
 
+const agentOptions = ref([])
+
+const filterAgents = (val, update) => {
+  // Logica di filtro
+  update(() => {
+    // aggiorna agentOptions in base a val
+  })
+}
+
 
 // Props
 const props = defineProps({

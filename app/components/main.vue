@@ -1,6 +1,6 @@
 <template>
   <q-page class="orders-page">
-    <!-- Sidebar con menu principale -->
+
     <div class="sidebar">
       <q-btn class="menu-btn" color="primary" icon="add" label="Nuova commissione" unelevated @click="handleNewOrder" />
 
@@ -152,6 +152,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
+const authStore = useAuthStore()
 
 const router = useRouter()
 const $q = useQuasar()
@@ -389,7 +390,7 @@ const handleInvoice = () => {
 }
 
 const handleExit = () => {
-  // Già gestito dal menu header
+  authStore.logout()
 }
 
 // Mount

@@ -137,7 +137,7 @@ const handleNewInvoice = () => {
 }
 
 const handleBackToOrders = () => {
-  router.push('/orders')
+  router.push('/')
 }
 
 onMounted(() => {

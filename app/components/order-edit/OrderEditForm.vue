@@ -624,7 +624,7 @@ onMounted(() => {
 }
 
 .header-spacer {
-  height: 90px;
+  height: 40px;
 }
 
 .order-grid {
