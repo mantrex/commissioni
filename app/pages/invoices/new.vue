@@ -1,19 +1,16 @@
 <template>
   <q-page class="invoice-page">
-    <InvoiceForm :mode="mode" :invoice-id="invoiceId" :comm-num="commNum" />
+    <InvoiceForm mode="new" :comm-num="commNum" />
   </q-page>
 </template>
 
 <script setup>
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import InvoiceForm from '../../components/invoices/InvoicesForm.vue'
+import InvoiceForm from '~/components/invoices/InvoiceForm.vue'
 
 const route = useRoute()
-
-const invoiceId = computed(() => route.query.id || null)
 const commNum = computed(() => route.query.commNum || null)
-const mode = computed(() => invoiceId.value ? 'edit' : 'new')
 </script>
 
 <style scoped lang="scss">
