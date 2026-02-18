@@ -9,6 +9,8 @@
 
       <q-btn class="menu-btn" color="accent" icon="receipt" label="Fattura" unelevated @click="handleInvoice" />
 
+      <q-btn class="menu-btn" color="secondary" icon="list_alt" label="Liste" unelevated @click="router.push('/lists')" />
+
       <q-btn class="menu-btn" color="info" icon="logout" label="Esci" unelevated @click="handleExit" />
     </div>
 
