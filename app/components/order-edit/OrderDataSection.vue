@@ -7,13 +7,31 @@
     </div>
 
     <div class="row q-col-gutter-sm">
-      <!-- Numero Commissione -->
+      <!-- Numero Commissione: readonly + penna per modifica -->
       <div class="col-12 col-sm-6">
-        <q-input v-model="data.commNum" label="Comm. n." outlined dense readonly :bg-color="'grey-3'">
-          <template v-slot:prepend>
-            <q-icon name="tag" />
-          </template>
-        </q-input>
+        <div class="commnum-wrapper">
+          <q-input
+            v-model="commNum"
+            label="Comm. n."
+            outlined
+            dense
+            readonly
+            :bg-color="'grey-3'"
+            input-style="font-family: monospace; font-weight: 600;"
+            class="commnum-input"
+          >
+            <template v-slot:prepend>
+              <q-icon name="tag" />
+            </template>
+          </q-input>
+          <q-btn
+            flat dense round icon="edit" size="sm" color="primary"
+            class="commnum-edit-btn"
+            @click="emit('editCommNum')"
+          >
+            <q-tooltip>Modifica numero commissione</q-tooltip>
+          </q-btn>
+        </div>
       </div>
 
       <!-- Data -->
@@ -69,13 +87,17 @@ import { ref, onMounted } from 'vue'
 
 const { statuses: allStatuses, loadStatuses } = useStatuses()
 
-// ✅ USA defineModel
 const data = defineModel('data', {
   type: Object,
   required: true
 })
 
-const emit = defineEmits(['editAgent'])
+const commNum = defineModel('commNum', {
+  type: String,
+  default: ''
+})
+
+const emit = defineEmits(['editAgent', 'editCommNum'])
 
 const statusOptions = ref([])
 const allAgents = ref([])
@@ -83,27 +105,19 @@ const agentOptions = ref([])
 
 const filterStatuses = (val, update) => {
   if (val === '') {
-    update(() => {
-      statusOptions.value = allStatuses.value
-    })
+    update(() => { statusOptions.value = allStatuses.value })
     return
   }
-
   update(() => {
     const needle = val.toLowerCase()
-    statusOptions.value = allStatuses.value.filter(
-      s => s.label.toLowerCase().indexOf(needle) > -1
-    )
+    statusOptions.value = allStatuses.value.filter(s => s.label.toLowerCase().includes(needle))
   })
 }
 
-// ✅ FIX: Corretto l'uso di $fetch
 const loadAgents = async () => {
   try {
     const agentsData = await $fetch('/api/agents')
-
-    // ✅ $fetch restituisce direttamente i dati, non ha .value
-    if (agentsData && agentsData.agents) {
+    if (agentsData?.agents) {
       allAgents.value = agentsData.agents
       agentOptions.value = agentsData.agents
     }
@@ -114,24 +128,19 @@ const loadAgents = async () => {
 
 const filterAgents = (val, update) => {
   if (val === '') {
-    update(() => {
-      agentOptions.value = allAgents.value
-    })
+    update(() => { agentOptions.value = allAgents.value })
     return
   }
-
   update(() => {
     const needle = val.toLowerCase()
-    agentOptions.value = allAgents.value.filter(
-      a => a.label.toLowerCase().indexOf(needle) > -1
-    )
+    agentOptions.value = allAgents.value.filter(a => a.label.toLowerCase().includes(needle))
   })
 }
 
 onMounted(async () => {
   await loadStatuses()
   statusOptions.value = allStatuses.value
-  await loadAgents() // ✅ Aggiungi await per aspettare il caricamento
+  await loadAgents()
 })
 </script>
 
@@ -154,6 +163,20 @@ onMounted(async () => {
     font-weight: 600;
     color: $text-primary;
     font-size: 14px;
+  }
+}
+
+.commnum-wrapper {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+
+  .commnum-input {
+    flex: 1;
+  }
+
+  .commnum-edit-btn {
+    margin-top: 4px;
   }
 }
 

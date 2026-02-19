@@ -18,7 +18,7 @@
         <q-select v-model="data.insurance" label="Assicura" :options="insuranceOptions" option-label="label"
           option-value="value" emit-value map-options outlined dense use-input @filter="filterInsurances" />
 
-        <q-input v-model="data.notes" label="Note" outlined dense type="textarea" :rows="6" class="span-2" />
+        <q-input v-model="data.notes" label="Note" outlined dense type="textarea" :rows="3" class="span-2" />
 
         <q-checkbox v-model="data.issued" label="Fattura Emessa" dense class="span-2" />
       </div>

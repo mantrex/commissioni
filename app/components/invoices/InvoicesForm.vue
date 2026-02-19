@@ -42,21 +42,21 @@
       <!-- COLONNA 1 -->
       <div class="left-column">
         <ClientData v-model:client="invoiceData.client" />
-        <PackingData v-model:packing="invoiceData.packing" v-model:packages="invoiceData.packages" />
       </div>
 
       <!-- COLONNA 2 -->
       <div class="middle-column">
         <InvoiceData v-model:data="invoiceData.invoiceData" />
-        <Receipts v-model:receipts="invoiceData.receipts" />
+        <!--<Receipts v-model:receipts="invoiceData.receipts" />-->
         <FinancialTotal v-model:financial="invoiceData.financial" />
       </div>
-
-      <!-- COLONNA 3 -->
+      
       <div class="right-column">
-        <ShippingLabel v-model:label="invoiceData.shippingLabel" />
+        <!--<ShippingLabel v-model:label="invoiceData.shippingLabel" />-->
+        <PackingData v-model:packing="invoiceData.packing" v-model:packages="invoiceData.packages" />
+
       </div>
-    </div>
+    </div
 
     <!-- ARTICOLI FULL WIDTH -->
     <div class="q-mt-md">

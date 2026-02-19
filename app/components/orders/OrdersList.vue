@@ -24,11 +24,72 @@
       <OrdersTable v-model:pagination="pagination" :orders="orders" :loading="loading" @request="onRequest"
         @row-click="handleRowClick" />
     </div>
+
+    <!-- =============================================
+         Dialog: inserimento numero commissione
+    ============================================== -->
+    <q-dialog v-model="newOrderDialog.show" persistent @show="focusCommNumInput">
+      <q-card style="min-width: 400px">
+        <q-bar class="dialog-header">
+          <q-icon name="add_circle" />
+          <div class="dialog-title q-ml-sm">Nuova Commissione</div>
+          <q-space />
+          <q-btn dense flat icon="close" @click="closeNewOrderDialog" />
+        </q-bar>
+
+        <q-card-section class="q-pa-md" style="min-height: 160px;">
+          <div class="text-body2 text-grey-7 q-mb-md">
+            Inserisci il numero della nuova commissione. Verrà formattato a 8 cifre automaticamente.
+          </div>
+
+          <q-input
+            ref="commNumInputRef"
+            v-model="newOrderDialog.commNum"
+            label="Numero Commissione *"
+            outlined
+            dense
+            mask="########"
+            fill-mask="0"
+            reverse-fill-mask
+            input-style="font-family: monospace; font-size: 16px; letter-spacing: 2px;"
+            :error="!!newOrderDialog.error"
+            :error-message="newOrderDialog.error"
+            :loading="newOrderDialog.checking"
+            @keyup.enter="confirmNewOrder"
+            @update:model-value="onCommNumInput"
+          >
+            <template v-slot:append>
+              <q-icon v-if="newOrderDialog.valid === true" name="check_circle" color="positive" />
+              <q-icon v-else-if="newOrderDialog.valid === false" name="cancel" color="negative" />
+            </template>
+          </q-input>
+
+          <!-- Spazio fisso per il messaggio di stato: non allargarsi mai -->
+          <div style="height: 24px; margin-top: 4px;">
+            <span v-if="newOrderDialog.valid === true" class="text-positive text-caption">
+              <q-icon name="check" size="xs" /> Numero disponibile
+            </span>
+          </div>
+        </q-card-section>
+
+        <q-card-actions align="right" class="q-pa-md">
+          <q-btn flat label="Annulla" color="negative" @click="closeNewOrderDialog" />
+          <q-btn
+            label="Crea Commissione"
+            color="primary"
+            unelevated
+            icon="add"
+            :disable="!newOrderDialog.commNum || newOrderDialog.valid !== true || newOrderDialog.checking"
+            @click="confirmNewOrder"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import OrdersFilters from './OrdersFilters.vue'
@@ -110,10 +171,8 @@ const loadOrders = async () => {
       throw new Error(error.value.message || 'Errore nel caricamento')
     }
 
-    if (!data.value) {
-      return;
-    }
-    
+    if (!data.value) return
+
     orders.value = data.value.orders || []
     totalOrders.value = data.value.total || 0
     pagination.value.rowsNumber = totalOrders.value
@@ -171,16 +230,100 @@ const handleRowClick = (row) => {
   router.push(`/orders/${row._id}`)
 }
 
-const handleNewOrder = () => {
-  router.push('/orders/new')
-}
-
 const handleInvoice = () => {
   router.push('/invoices')
 }
 
 const handleExit = () => {
   authStore.logout()
+}
+
+// =============================================
+// Dialog: nuova commissione con verifica numero
+// =============================================
+const commNumInputRef = ref(null)
+const checkTimeout = ref(null)
+
+const COMM_NUM_LENGTH = 8
+
+// Normalizza qualsiasi numero a 8 cifre con zero-padding
+const padCommNum = (val) => {
+  const n = parseInt(val)
+  if (isNaN(n) || n <= 0) return ''
+  return String(n).padStart(COMM_NUM_LENGTH, '0')
+}
+
+const newOrderDialog = reactive({
+  show: false,
+  commNum: '',
+  checking: false,
+  valid: null,  // null = non verificato, true = disponibile, false = già esiste
+  error: ''
+})
+
+const handleNewOrder = () => {
+  newOrderDialog.show = true
+  newOrderDialog.commNum = ''
+  newOrderDialog.checking = false
+  newOrderDialog.valid = null
+  newOrderDialog.error = ''
+}
+
+const closeNewOrderDialog = () => {
+  newOrderDialog.show = false
+  clearTimeout(checkTimeout.value)
+}
+
+const focusCommNumInput = () => {
+  nextTick(() => commNumInputRef.value?.focus())
+}
+
+const onCommNumInput = (val) => {
+  newOrderDialog.valid = null
+  newOrderDialog.error = ''
+
+  // Con la mask il valore è sempre 8 char, ma potrebbe essere "00000000" (vuoto)
+  if (!val || val === '00000000') return
+
+  const n = parseInt(val)
+  if (isNaN(n) || n <= 0) {
+    newOrderDialog.error = 'Inserisci un numero valido (maggiore di zero)'
+    return
+  }
+
+  // Il valore dalla mask è già formattato con zeri es. "00000010"
+  clearTimeout(checkTimeout.value)
+  checkTimeout.value = setTimeout(() => checkCommNum(val), 400)
+}
+
+const checkCommNum = async (commNumPadded) => {
+  newOrderDialog.checking = true
+  newOrderDialog.valid = null
+  newOrderDialog.error = ''
+
+  try {
+    // Usa l'endpoint dedicato che confronta per valore numerico
+    // così "781", "00781", "00000781" sono tutti equivalenti
+    const result = await $fetch(`/api/orders/check-commnum?commNum=${encodeURIComponent(commNumPadded)}`)
+    if (result.exists) {
+      newOrderDialog.valid = false
+      newOrderDialog.error = `La commissione "${result.commNum}" esiste già`
+    } else {
+      newOrderDialog.valid = true
+    }
+  } catch (err) {
+    newOrderDialog.valid = null
+    newOrderDialog.error = 'Errore durante la verifica, riprova'
+  } finally {
+    newOrderDialog.checking = false
+  }
+}
+
+const confirmNewOrder = () => {
+  const commNum = newOrderDialog.commNum
+  if (!commNum || commNum === '00000000' || newOrderDialog.valid !== true || newOrderDialog.checking) return
+  closeNewOrderDialog()
+  router.push(`/orders/new?commNum=${encodeURIComponent(commNum)}`)
 }
 
 onMounted(() => {
@@ -219,6 +362,16 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.dialog-header {
+  background-color: $modal-header;
+  color: $contrast;
+
+  .dialog-title {
+    font-weight: 500;
+    font-size: 16px;
+  }
 }
 
 @media (max-width: 960px) {
