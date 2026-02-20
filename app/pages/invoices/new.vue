@@ -7,7 +7,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import InvoiceForm from '~/components/invoices/InvoiceForm.vue'
+import InvoiceForm from '~/components/invoices/InvoicesForm.vue'
 
 const route = useRoute()
 const commNum = computed(() => route.query.commNum || null)

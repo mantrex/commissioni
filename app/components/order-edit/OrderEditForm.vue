@@ -3,14 +3,17 @@
     <div class="order-edit-container">
 
       <!-- HEADER STICKY -->
-      <div class="order-header-sticky">
+      <div class="order-header-sticky" @click="handleHeaderClick">
         <div class="header-content">
+
+          <!-- SINISTRA: back + info commissione -->
           <div class="header-left">
-            <q-btn flat dense round icon="arrow_back" @click="handleBack" size="sm" class="back-btn">
+            <q-btn flat dense round icon="arrow_back" @click.stop="handleBack" size="sm" class="back-btn">
               <q-tooltip>Torna alla lista</q-tooltip>
             </q-btn>
             <span class="commission-info">
-              Commissione {{ isNew ? (orderData.commNum || 'Nuova') : orderData.commNum }}
+              <span class="commission-label">Commissione</span>
+              {{ isNew ? (orderData.commNum || 'Nuova') : orderData.commNum }}
               <span v-if="orderData.client" class="separator">•</span>
               <span v-if="orderData.client" class="client-name">
                 {{ getClientName(orderData.client) }}
@@ -18,14 +21,36 @@
             </span>
           </div>
 
+          <!-- CENTRO: QuickNav sempre visibile -->
+          <div class="header-center">
+            <QuickNav
+              ref="quickNavRef"
+              v-model:status="orderData.orderData.status"
+              :comm-num="orderData.commNum"
+              :status-options="statusOptions"
+              :loading="saving"
+              @prev="handleNavPrev"
+              @next="handleNavNext"
+              @jump="handleNavJump"
+              @status-change="handleStatusChange"
+            />
+          </div>
+
+          <!-- DESTRA: azioni -->
           <div class="header-actions">
-            <q-btn flat dense label="Fattura" icon="receipt" @click="handleInvoice"
+            <q-btn flat dense icon="receipt" @click.stop="handleInvoice"
               :disable="!canCreateInvoice" class="action-btn invoice-btn">
+              <span class="btn-label">Fattura</span>
               <q-tooltip>{{ canCreateInvoice ? 'Crea fattura da questa commissione' : 'Nessun articolo fatturato' }}</q-tooltip>
             </q-btn>
-            <q-btn flat dense label="Annulla" @click="handleCancel" class="action-btn cancel-btn" />
-            <q-btn flat dense label="Salva" icon="save" @click="handleSave" :loading="saving" class="action-btn save-btn" />
+            <q-btn flat dense icon="cancel" @click.stop="handleCancel" class="action-btn cancel-btn">
+              <span class="btn-label">Annulla</span>
+            </q-btn>
+            <q-btn flat dense icon="save" @click.stop="handleSave" :loading="saving" class="action-btn save-btn">
+              <span class="btn-label">Salva</span>
+            </q-btn>
           </div>
+
         </div>
       </div>
 
@@ -112,6 +137,7 @@
 
     <!-- Dialog Modifica Numero Commissione -->
     <ComponentDialog
+      :side="true"
       v-model="dialogs.commNum.show"
       title="Modifica Numero Commissione"
       :component-name="NewOrderDialog"
@@ -158,11 +184,12 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useQuasar } from 'quasar'
 import ComponentDialog from '~/components/common/ComponentDialog.vue'
 import GenericWarning from '~/components/common/GenericWarning.vue'
+import QuickNav from '~/components/common/QuickNav.vue'
 import ClientSection from './ClientSection.vue'
 import OrderDataSection from './OrderDataSection.vue'
 import ShipmentsNotesSection from './ShipmentsNotesSection.vue'
@@ -171,6 +198,12 @@ import ClientDialog from './ClientDialog.vue'
 import ItemDialog from './ItemDialog.vue'
 import AgentDialog from './AgentDialog.vue'
 import NewOrderDialog from '~/components/orders/NewOrderDialog.vue'
+import { getConfigValue, isConfigActive } from '#shared/config'
+
+// ─── Autosave ───
+const autosaveEnabled = isConfigActive('AUTOSAVE')
+const autosaveSeconds = getConfigValue('AUTOSAVE', 30)
+let autosaveTimer = null
 
 const router = useRouter()
 const route = useRoute()
@@ -180,9 +213,13 @@ const orderId = route.params.id
 const isNew = !orderId || orderId === 'new'
 const saving = ref(false)
 const topSectionCollapsed = ref(false)
+const quickNavRef = ref(null)
 
-// Legge commNum pre-assegnato dalla query string (passato da OrdersList dialog)
 const presetCommNum = route.query.commNum || ''
+
+// Statuses
+const statusOptions = ref([])
+const { statuses: allStatuses, loadStatuses } = useStatuses()
 
 // Dati ordine
 const orderData = reactive({
@@ -196,17 +233,11 @@ const orderData = reactive({
   },
   shipments: Array(3).fill(null).map(() => ({ date: null, courier: '' })),
   notes: Array(5).fill(null).map(() => ({ text: '' })),
-  financial: {
-    ca: 0,
-    rd: 0,
-    ric: 0,
-    balance: 0,
-    pay: 0
-  },
+  financial: { ca: 0, rd: 0, ric: 0, balance: 0, pay: 0 },
   items: []
 })
 
-// Dialogs state
+// Dialogs
 const dialogs = reactive({
   client: { show: false, isNew: false, data: null },
   item: { show: false, isNew: false, data: null, index: null },
@@ -226,14 +257,48 @@ const getClientName = (client) => {
   const parts = []
   if (client.lastname) parts.push(client.lastname)
   if (client.firstname) parts.push(client.firstname)
-  if (parts.length > 0) return parts.join(' ')
-  return client.company || ''
+  return parts.length > 0 ? parts.join(' ') : (client.company || '')
 }
+
+// ─── Click header → focus QuickNav ───
+const handleHeaderClick = () => {
+  quickNavRef.value?.focus()
+}
+
+// ─── Build body (condiviso) ───
+const buildBody = () => ({
+  commNum: orderData.commNum,
+  client: orderData.client?._id ? { _id: orderData.client._id } : undefined,
+  orderData: {
+    date: orderData.orderData.date,
+    dueDate: orderData.orderData.dueDate,
+    agentId: orderData.orderData.agentId,
+    status: orderData.orderData.status
+  },
+  shipments: orderData.shipments,
+  notes: orderData.notes,
+  items: orderData.items.map(item => ({
+    productId: item.productId?._id || item.productId || null,
+    code: item.code || '',
+    description: item.description || '',
+    quantity: item.quantity || 0,
+    ready: item.ready ?? false,
+    invoiced: item.invoiced ?? 0,
+    ordered: item.ordered ?? false,
+    note: item.note || ''
+  })),
+  financial: {
+    ca: orderData.financial.ca || 0,
+    rd: orderData.financial.rd || 0,
+    ric: orderData.financial.ric || 0,
+    balance: orderData.financial.balance || 0,
+    pay: orderData.financial.pay || 0
+  }
+})
 
 // ─── Load ───
 const loadOrder = async () => {
   if (isNew) return
-
   try {
     const { data, error } = await useFetch(`/api/orders/${orderId}`)
     if (error.value) throw new Error(error.value.message)
@@ -256,11 +321,9 @@ const loadOrder = async () => {
         courier: s.courier || ''
       }))
     }
-
     if (order.notes?.length > 0) {
       orderData.notes = order.notes.map(n => ({ text: n.text || '' }))
     }
-
     orderData.financial.ca = order.ca || 0
     orderData.financial.rd = order.rd || 0
     orderData.financial.ric = order.ric || 0
@@ -274,57 +337,14 @@ const loadOrder = async () => {
   }
 }
 
-// ─── Navigation ───
-const handleBack = () => {
-  router.push('/')
-}
-
-const handleCancel = () => {
-  dialogs.cancel.show = true
-}
-
-const handleCancelConfirm = (confirmed) => {
-  if (confirmed) router.push('/')
-}
-
-// ─── Save ───
-const handleSave = async () => {
+// ─── Save (silent = niente notify, usato dalla nav) ───
+const handleSave = async (silent = false) => {
   saving.value = true
   try {
     const endpoint = isNew ? '/api/orders' : `/api/orders/${orderId}`
     const method = isNew ? 'POST' : 'PUT'
 
-    const bodyToSend = {
-      commNum: orderData.commNum,
-      client: { _id: orderData.client._id },
-      orderData: {
-        date: orderData.orderData.date,
-        dueDate: orderData.orderData.dueDate,
-        agentId: orderData.orderData.agentId,
-        status: orderData.orderData.status
-      },
-      shipments: orderData.shipments,
-      notes: orderData.notes,
-      items: orderData.items.map(item => ({
-        productId: item.productId?._id || item.productId || null,
-        code: item.code || '',
-        description: item.description || '',
-        quantity: item.quantity || 0,
-        ready: item.ready ?? false,
-        invoiced: item.invoiced ?? 0,
-        ordered: item.ordered ?? false,
-        note: item.note || ''
-      })),
-      financial: {
-        ca: orderData.financial.ca || 0,
-        rd: orderData.financial.rd || 0,
-        ric: orderData.financial.ric || 0,
-        balance: orderData.financial.balance || 0,
-        pay: orderData.financial.pay || 0
-      }
-    }
-
-    const { data, error } = await useFetch(endpoint, { method, body: bodyToSend })
+    const { data, error } = await useFetch(endpoint, { method, body: buildBody() })
     if (error.value) throw new Error(error.value.message)
 
     if (isNew && data.value?.order?._id) {
@@ -332,7 +352,9 @@ const handleSave = async () => {
       if (data.value.order.commNum) orderData.commNum = data.value.order.commNum
     }
 
-    $q.notify({ type: 'positive', message: 'Ordine salvato con successo' })
+    if (!silent) {
+      $q.notify({ type: 'positive', message: 'Ordine salvato con successo' })
+    }
 
   } catch (err) {
     $q.notify({ type: 'negative', message: 'Errore nel salvataggio', caption: err.message })
@@ -340,6 +362,46 @@ const handleSave = async () => {
     saving.value = false
   }
 }
+
+// ─── Nav handlers (ricevuti da QuickNav) ───
+const saveAndNavigate = async (targetId) => {
+  // Salva sempre, anche se nuovo (il commNum esiste già)
+  await handleSave(true)
+  router.push(`/orders/${targetId}`)
+}
+
+const handleNavPrev = async (prevOrder) => {
+  await saveAndNavigate(prevOrder.id)
+}
+
+const handleNavNext = async (nextOrder) => {
+  await saveAndNavigate(nextOrder.id)
+}
+
+const handleNavJump = async (commNumStr) => {
+  try {
+    const data = await $fetch(`/api/orders/by-commnum/${commNumStr}`)
+    if (data?.order?._id) {
+      await saveAndNavigate(data.order._id)
+    } else {
+      $q.notify({ type: 'warning', message: `Commissione "${commNumStr}" non trovata` })
+    }
+  } catch {
+    $q.notify({ type: 'warning', message: `Commissione "${commNumStr}" non trovata` })
+  }
+}
+
+const handleStatusChange = async () => {
+  if (!isNew) {
+    await handleSave(true)
+    $q.notify({ type: 'positive', message: 'Stato aggiornato', timeout: 1000 })
+  }
+}
+
+// ─── Navigation ───
+const handleBack = () => router.push('/')
+const handleCancel = () => { dialogs.cancel.show = true }
+const handleCancelConfirm = (confirmed) => { if (confirmed) router.push('/') }
 
 // ─── Fattura ───
 const handleInvoice = async () => {
@@ -389,15 +451,8 @@ const handleInvoice = async () => {
 }
 
 // ─── CommNum ───
-const handleEditCommNum = () => {
-  dialogs.commNum.show = true
-}
-
-const handleCommNumDialogClose = (newCommNum) => {
-  if (newCommNum) {
-    orderData.commNum = newCommNum
-  }
-}
+const handleEditCommNum = () => { dialogs.commNum.show = true }
+const handleCommNumDialogClose = (newCommNum) => { if (newCommNum) orderData.commNum = newCommNum }
 
 // ─── Cliente ───
 const handleEditClient = () => {
@@ -405,10 +460,7 @@ const handleEditClient = () => {
   dialogs.client.data = orderData.client || {}
   dialogs.client.show = true
 }
-
-const handleClientDialogClose = (savedClient) => {
-  if (savedClient) orderData.client = savedClient
-}
+const handleClientDialogClose = (savedClient) => { if (savedClient) orderData.client = savedClient }
 
 // ─── Articoli ───
 const handleAddItem = () => {
@@ -434,7 +486,6 @@ const handleItemDialogClose = async (savedItem) => {
   }
 
   const editIndex = dialogs.item.index
-
   if (dialogs.item.isNew) {
     orderData.items.push(savedItem)
   } else {
@@ -446,43 +497,10 @@ const handleItemDialogClose = async (savedItem) => {
     const endpoint = isNew ? '/api/orders' : `/api/orders/${orderId}`
     const method = isNew ? 'POST' : 'PUT'
 
-    const bodyToSend = {
-      commNum: orderData.commNum,
-      client: { _id: orderData.client._id },
-      orderData: {
-        date: orderData.orderData.date,
-        dueDate: orderData.orderData.dueDate,
-        agentId: orderData.orderData.agentId,
-        status: orderData.orderData.status
-      },
-      shipments: orderData.shipments,
-      notes: orderData.notes,
-      items: orderData.items.map(item => ({
-        productId: item.productId?._id || item.productId || null,
-        code: item.code || '',
-        description: item.description || '',
-        quantity: item.quantity || 0,
-        ready: item.ready ?? false,
-        invoiced: item.invoiced ?? 0,
-        ordered: item.ordered ?? false,
-        note: item.note || ''
-      })),
-      financial: {
-        ca: orderData.financial.ca || 0,
-        rd: orderData.financial.rd || 0,
-        ric: orderData.financial.ric || 0,
-        balance: orderData.financial.balance || 0,
-        pay: orderData.financial.pay || 0
-      }
-    }
-
-    const { data, error } = await useFetch(endpoint, { method, body: bodyToSend })
+    const { data, error } = await useFetch(endpoint, { method, body: buildBody() })
     if (error.value) throw new Error(error.value.message)
 
-    if (data.value?.order?.items) {
-      orderData.items = [...data.value.order.items]
-    }
-
+    if (data.value?.order?.items) orderData.items = [...data.value.order.items]
     if (isNew && data.value?.order?._id) {
       router.replace(`/orders/${data.value.order._id}`)
       if (data.value.order.commNum) orderData.commNum = data.value.order.commNum
@@ -493,14 +511,9 @@ const handleItemDialogClose = async (savedItem) => {
       message: dialogs.item.isNew ? 'Articolo aggiunto' : 'Aggiornamento effettuato',
       timeout: 1500
     })
-
   } catch (err) {
     $q.notify({ type: 'negative', message: 'Errore nel salvataggio automatico', caption: err.message })
-    if (dialogs.item.isNew) {
-      orderData.items.pop()
-    } else {
-      await loadOrder()
-    }
+    if (dialogs.item.isNew) { orderData.items.pop() } else { await loadOrder() }
   } finally {
     saving.value = false
     dialogs.item.data = null
@@ -534,9 +547,42 @@ const handleAgentDialogClose = (savedAgent) => {
   }
 }
 
-onMounted(() => {
-  loadOrder()
+const startAutosave = () => {
+  if (!autosaveEnabled || isNew) return
+  autosaveTimer = setInterval(async () => {
+    const anyDialogOpen = Object.values(dialogs).some(d => d.show)
+    if (saving.value || !orderData.client?._id || anyDialogOpen) return
+    await handleSave(true)
+    $q.notify({
+      message: '',
+      icon: 'sync',
+      color: 'grey-7',
+      position: 'bottom-left',
+      timeout: 1500
+    })
+  }, autosaveSeconds * 1000)
+}
+
+const stopAutosave = () => {
+  if (autosaveTimer) {
+    clearInterval(autosaveTimer)
+    autosaveTimer = null
+  }
+}
+
+onMounted(async () => {
+  await loadOrder()
+  await loadStatuses()
+  statusOptions.value = allStatuses.value
+  startAutosave() 
+  await nextTick()
+  quickNavRef.value?.focus()
 })
+
+onUnmounted(() => {
+  stopAutosave()
+})
+
 </script>
 
 <style scoped lang="scss">
@@ -560,15 +606,16 @@ onMounted(() => {
   background: $sticky-menu;
   border-bottom: 1px solid $border;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  cursor: default;
 
   .header-content {
     max-width: 1600px;
     margin: 0 auto;
-    padding: 8px 16px;
-    display: flex;
-    justify-content: space-between;
+    padding: 4px 16px;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
     min-height: 40px;
   }
 
@@ -576,7 +623,6 @@ onMounted(() => {
     display: flex;
     align-items: center;
     gap: 12px;
-    flex: 1;
     min-width: 0;
 
     .back-btn { color: $text-primary; flex-shrink: 0; }
@@ -592,20 +638,26 @@ onMounted(() => {
       align-items: center;
       gap: 8px;
 
+      .commission-label { @media (max-width: 1100px) { display: none; } }
       .separator { color: $text-secondary; font-weight: 400; }
       .client-name { font-weight: 400; color: $text-secondary; }
     }
   }
 
+  .header-center {
+    display: flex;
+    justify-content: center;
+  }
+
   .header-actions {
     display: flex;
     gap: 4px;
-    flex-shrink: 0;
+    justify-content: flex-end;
 
     .action-btn {
       font-size: 13px;
       font-weight: 500;
-      padding: 6px 16px;
+      padding: 4px 12px;
       text-transform: none;
       min-height: 32px;
     }
@@ -613,6 +665,28 @@ onMounted(() => {
     .invoice-btn { color: $accent; }
     .cancel-btn { color: $negative; }
     .save-btn { color: $primary; }
+  }
+
+  // ── RESPONSIVE: sotto 750px ──
+  // Layout diventa: [← N° · ] [icone a destra]
+  // spariscono: client-name, commission-label, frecce nav, status
+  @media (max-width: 750px) {
+    .header-content {
+      grid-template-columns: auto 1fr auto;  // back+num | input | icone
+    }
+
+    .commission-info {
+      .commission-label, .separator, .client-name { display: none; }
+    }
+
+    // Nasconde frecce e status dentro QuickNav
+    :deep(.nav-only) { display: none !important; }
+
+    // Icone azioni: solo icona, niente label
+    .action-btn {
+      padding: 4px 6px;
+      .btn-label { display: none; }
+    }
   }
 }
 
@@ -650,9 +724,7 @@ onMounted(() => {
   gap: 16px;
   padding: 16px;
 
-  @media (max-width: 1024px) {
-    grid-template-columns: 1fr;
-  }
+  @media (max-width: 1024px) { grid-template-columns: 1fr; }
 }
 
 .top-section :deep(.q-card) {
@@ -662,36 +734,14 @@ onMounted(() => {
 
 @media (max-width: 768px) {
   .order-header-sticky {
-    .header-content { padding: 6px 12px; gap: 8px; }
-    .header-left {
-      gap: 8px;
-      .commission-info {
-        font-size: 14px;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 2px;
-        .separator { display: none; }
-      }
-    }
-    .header-actions {
-      gap: 3px;
-      .action-btn { font-size: 12px; padding: 5px 12px; min-height: 28px; }
-    }
+    .header-content { padding: 4px 8px; gap: 6px; }
+    .commission-info { font-size: 13px; }
+    .header-actions .action-btn { font-size: 12px; padding: 4px 6px; min-height: 28px; }
   }
-  .header-spacer { height: 100px; }
+  .header-spacer { height: 48px; }
 }
 
-@media (max-width: 480px) {
-  .order-header-sticky {
-    .header-left .commission-info {
-      font-size: 13px;
-      .client-name { font-size: 12px; }
-    }
-    .header-actions {
-      flex-wrap: wrap;
-      gap: 4px;
-      .action-btn { min-width: 65px; }
-    }
-  }
+@media (max-width: 600px) {
+  .order-header-sticky .header-center { display: none; }
 }
 </style>

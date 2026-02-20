@@ -1,10 +1,18 @@
 <template>
   <div class="table-container">
-    <q-table flat bordered :rows="invoices" :columns="columns" row-key="_id" :loading="loading"
-      v-model:pagination="localPagination" @request="emit('request', $event)"
-      @row-click="(evt, row) => emit('rowClick', row)" class="invoices-table"
-      :rows-per-page-options="[10, 25, 50, 100]">
-
+    <q-table
+      flat
+      bordered
+      :rows="invoices"
+      :columns="columns"
+      row-key="_id"
+      :loading="loading"
+      v-model:pagination="localPagination"
+      @request="emit('request', $event)"
+      @row-click="(evt, row) => emit('rowClick', row)"
+      class="invoices-table"
+      :rows-per-page-options="[10, 25, 50, 100]"
+      style="height:100%">
       <!-- Loading -->
       <template v-slot:loading>
         <q-inner-loading showing color="primary" />
@@ -12,7 +20,10 @@
 
       <!-- Colonna ID Fattura -->
       <template v-slot:body-cell-invoiceId="props">
-        <q-td :props="props" class="text-bold cursor-pointer" @click.stop="emit('edit', props.row)">
+        <q-td
+          :props="props"
+          class="text-bold cursor-pointer"
+          @click.stop="emit('edit', props.row)">
           {{ props.row.invoiceId }}
         </q-td>
       </template>
@@ -34,7 +45,12 @@
       <!-- Colonna Commissione -->
       <template v-slot:body-cell-commNum="props">
         <q-td :props="props" class="text-center">
-          <q-chip v-if="props.row.commNum" dense color="primary" text-color="white" size="sm">
+          <q-chip
+            v-if="props.row.commNum"
+            dense
+            color="primary"
+            text-color="white"
+            size="sm">
             {{ props.row.commNum }}
           </q-chip>
           <span v-else class="text-grey-5">—</span>
@@ -44,7 +60,7 @@
       <!-- Colonna Corriere -->
       <template v-slot:body-cell-shipping="props">
         <q-td :props="props">
-          {{ props.row.shipping || '—' }}
+          {{ props.row.shipping || "—" }}
         </q-td>
       </template>
 
@@ -58,7 +74,11 @@
       <!-- Colonna Emessa -->
       <template v-slot:body-cell-issued="props">
         <q-td :props="props" class="text-center">
-          <q-icon v-if="props.row.issued" name="check_circle" color="positive" size="sm">
+          <q-icon
+            v-if="props.row.issued"
+            name="check_circle"
+            color="positive"
+            size="sm">
             <q-tooltip>Fattura Emessa</q-tooltip>
           </q-icon>
           <q-icon v-else name="schedule" color="warning" size="sm">
@@ -70,7 +90,14 @@
       <!-- Colonna Azioni -->
       <template v-slot:body-cell-actions="props">
         <q-td :props="props" class="text-center">
-          <q-btn flat dense round icon="edit" size="sm" color="primary" @click.stop="emit('edit', props.row)">
+          <q-btn
+            flat
+            dense
+            round
+            icon="edit"
+            size="sm"
+            color="primary"
+            @click.stop="emit('edit', props.row)">
             <q-tooltip>Modifica Fattura</q-tooltip>
           </q-btn>
         </q-td>
@@ -90,128 +117,128 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed } from "vue";
 
 const props = defineProps({
   invoices: {
     type: Array,
-    default: () => []
+    default: () => [],
   },
   loading: {
     type: Boolean,
-    default: false
+    default: false,
   },
   pagination: {
     type: Object,
-    required: true
-  }
-})
+    required: true,
+  },
+});
 
-const emit = defineEmits(['update:pagination', 'request', 'rowClick', 'edit'])
+const emit = defineEmits(["update:pagination", "request", "rowClick", "edit"]);
 
 const localPagination = computed({
   get: () => props.pagination,
-  set: (val) => emit('update:pagination', val)
-})
+  set: (val) => emit("update:pagination", val),
+});
 
 const columns = [
   {
-    name: 'invoiceId',
+    name: "invoiceId",
     required: true,
-    label: 'ID Fattura',
-    align: 'left',
-    field: 'invoiceId',
-    sortable: true
+    label: "ID Fattura",
+    align: "left",
+    field: "invoiceId",
+    sortable: true,
   },
   {
-    name: 'invoiceDate',
-    label: 'Data',
-    align: 'left',
-    field: 'invoiceDate',
-    sortable: true
+    name: "invoiceDate",
+    label: "Data",
+    align: "left",
+    field: "invoiceDate",
+    sortable: true,
   },
   {
-    name: 'client',
-    label: 'Intestatario',
-    align: 'left',
-    field: row => row.client
+    name: "client",
+    label: "Intestatario",
+    align: "left",
+    field: (row) => row.client,
   },
   {
-    name: 'commNum',
-    label: 'Comm.',
-    align: 'center',
-    field: 'commNum',
-    sortable: true
+    name: "commNum",
+    label: "Comm.",
+    align: "center",
+    field: "commNum",
+    sortable: true,
   },
   {
-    name: 'shipping',
-    label: 'Corriere',
-    align: 'left',
-    field: 'shipping'
+    name: "shipping",
+    label: "Corriere",
+    align: "left",
+    field: "shipping",
   },
   {
-    name: 'total',
-    label: 'Totale',
-    align: 'right',
-    field: 'total',
-    sortable: true
+    name: "total",
+    label: "Totale",
+    align: "right",
+    field: "total",
+    sortable: true,
   },
   {
-    name: 'issued',
-    label: 'Emessa',
-    align: 'center',
-    field: 'issued',
-    sortable: true
+    name: "issued",
+    label: "Emessa",
+    align: "center",
+    field: "issued",
+    sortable: true,
   },
   {
-    name: 'actions',
-    label: 'Azioni',
-    align: 'center'
-  }
-]
+    name: "actions",
+    label: "Azioni",
+    align: "center",
+  },
+];
 
 const formatDate = (date) => {
-  if (!date) return 'N/A'
-  return new Date(date).toLocaleDateString('it-IT')
-}
+  if (!date) return "N/A";
+  return new Date(date).toLocaleDateString("it-IT");
+};
 
 const formatCurrency = (value) => {
-  if (value === null || value === undefined) return '€ 0,00'
-  return new Intl.NumberFormat('it-IT', {
-    style: 'currency',
-    currency: 'EUR'
-  }).format(value)
-}
+  if (value === null || value === undefined) return "€ 0,00";
+  return new Intl.NumberFormat("it-IT", {
+    style: "currency",
+    currency: "EUR",
+  }).format(value);
+};
 
 const getClientName = (client) => {
-  if (!client) return 'N/A'
+  if (!client) return "N/A";
 
   if (client.company) {
-    return client.company
+    return client.company;
   }
 
-  const parts = []
-  if (client.lastname) parts.push(client.lastname)
-  if (client.firstname) parts.push(client.firstname)
+  const parts = [];
+  if (client.lastname) parts.push(client.lastname);
+  if (client.firstname) parts.push(client.firstname);
 
-  return parts.length > 0 ? parts.join(' ') : 'N/A'
-}
+  return parts.length > 0 ? parts.join(" ") : "N/A";
+};
 </script>
 
 <style scoped lang="scss">
 .table-container {
+  flex: 1;
+  overflow: hidden;
   background: $contrast;
   border-radius: 8px;
-  overflow: hidden;
 }
 
 .invoices-table {
-  :deep(.q-table__top) {
-    padding: 12px;
-  }
+  height: 100%;
 
   :deep(thead tr th) {
     position: sticky;
+    top: 0;
     z-index: 1;
     background: $bg-light;
     font-weight: 600;
