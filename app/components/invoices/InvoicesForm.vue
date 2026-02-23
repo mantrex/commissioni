@@ -4,11 +4,7 @@
     <div class="invoice-header-sticky">
       <div class="header-content">
         <div class="header-left">
-          <div v-if="invoiceData.invoiceId" class="invoice-number-badge">
-            <q-icon name="receipt_long" size="14px" />
-            <span>{{ invoiceData.invoiceId }}</span>
-          </div>
-          <q-btn
+                    <q-btn
             flat
             dense
             round
@@ -18,9 +14,13 @@
             class="back-btn">
             <q-tooltip>Torna indietro</q-tooltip>
           </q-btn>
+
+          <div v-if="invoiceData.invoiceId" class="invoice-number-badge">
+            <q-icon name="receipt_long" size="14px" />
+            <span>Fatt. Proforma {{ invoiceData.invoiceId }}</span>
+          </div>
           <span class="invoice-info">
-            Fattura {{ isNew ? "Nuova" : invoiceData.invoiceId }}
-            <span v-if="displayCommNum" class="separator">•</span>
+            <span v-if="displayCommNum" class="separator"> di </span>
             <span v-if="displayCommNum" class="comm-ref"
               >Comm. {{ displayCommNum }}</span
             >
@@ -203,13 +203,14 @@ const handleTaxableUpdate = (newTaxable) => {
 };
 
 const loadInvoice = async () => {
-  if (isNew.value && !props.commNum) return;
   if (isNew.value && props.presetInvoiceId) {
     invoiceData.invoiceId = props.presetInvoiceId;
     invoiceData.invoiceType = props.presetInvoiceType;
     invoiceData.invoiceNumber = props.presetInvoiceNumber;
     invoiceData.invoiceYear = props.presetInvoiceYear;
   }
+
+  if (isNew.value && !props.commNum) return;
   try {
     if (!isNew.value && props.invoiceId) {
       const { data, error } = await useFetch(
@@ -391,8 +392,6 @@ const handleSave = async () => {
 
 // Nello script
 const handleAutoSave = async () => {
-  if (isNew.value) return; // Non salvare se è nuova
-
   console.log("🔄 Auto-save items...");
 
   try {
@@ -469,7 +468,7 @@ onMounted(async () => {
         font-weight: 700;
         letter-spacing: 1.5px;
       }
-      
+
       .invoice-info {
         font-weight: 600;
         font-size: 16px;
@@ -481,7 +480,20 @@ onMounted(async () => {
         }
 
         .comm-ref {
-          color: $primary;
+          color: $text-secondary;
+        }
+
+        .invoice-number-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          padding: 3px 10px;
+          background: $primary;
+          color: white;
+          border-radius: 12px;
+          font-size: 14px;
+          font-weight: 700;
+          letter-spacing: 1px;
         }
       }
     }

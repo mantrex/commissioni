@@ -15,12 +15,19 @@ import { computed } from "vue";
 import { useRoute } from "vue-router";
 import InvoiceForm from "~/components/invoices/InvoicesForm.vue";
 
+// SOSTITUISCI tutta la parte script:
 const route = useRoute();
-const commNum = computed(() => route.query.commNum || null)
-const presetInvoiceId = computed(() => route.query.invoiceId || null)
-const presetInvoiceType = computed(() => route.query.invoiceType || 'E')
-const presetInvoiceNumber = computed(() => route.query.invoiceNumber ? parseInt(route.query.invoiceNumber) : null)
-const presetInvoiceYear = computed(() => route.query.invoiceYear ? parseInt(route.query.invoiceYear) : new Date().getFullYear())
+const commNum = computed(() => route.query.commNum || null);
+const presetInvoiceId = computed(() => route.query.invoiceId || null);
+const presetInvoiceType = computed(() => route.query.invoiceType || "E");
+const presetInvoiceNumber = computed(() =>
+  route.query.invoiceNumber ? parseInt(route.query.invoiceNumber) : null,
+);
+const presetInvoiceYear = computed(() =>
+  route.query.invoiceYear
+    ? parseInt(route.query.invoiceYear)
+    : new Date().getFullYear(),
+);
 </script>
 
 <style scoped lang="scss">

@@ -1,31 +1,31 @@
-import Invoice from '~~/server/models/Invoice'
+import Invoice from "~~/server/models/Invoice";
 
 export default defineEventHandler(async (event) => {
   try {
-    const body = await readBody(event)
+    const body = await readBody(event);
 
     // Validazioni
     if (!body.client || (!body.client.lastname && !body.client.company)) {
       throw createError({
         statusCode: 400,
-        message: 'Dati cliente obbligatori'
-      })
+        message: "Dati cliente obbligatori",
+      });
     }
 
     if (!body.items || body.items.length === 0) {
       throw createError({
         statusCode: 400,
-        message: 'Almeno un articolo è obbligatorio'
-      })
+        message: "Almeno un articolo è obbligatorio",
+      });
     }
 
     // Genera ID fattura se non presente
-    let invoiceId = body.invoiceData?.invoiceId || body.invoiceId
+    let invoiceId = body.invoiceId || body.invoiceData?.invoiceId;
     if (!invoiceId) {
-      invoiceId = await generateInvoiceId()
+      invoiceId = await generateInvoiceId();
     }
 
-    console.log('📄 Creazione fattura con ID:', invoiceId)
+    console.log("📄 Creazione fattura con ID:", invoiceId);
 
     // Prepara dati fattura
     const invoiceData = {
@@ -76,73 +76,71 @@ export default defineEventHandler(async (event) => {
       shippingLabel: body.shippingLabel || {},
     };
 
-    const invoice = await Invoice.create(invoiceData)
+    const invoice = await Invoice.create(invoiceData);
 
     const populatedInvoice = await Invoice.findById(invoice._id)
-      .populate('orderId', 'commNum')
-      .populate('items.productId', 'code name details')
-      .lean()
+      .populate("orderId", "commNum")
+      .populate("items.productId", "code name details")
+      .lean();
 
     return {
       success: true,
       invoice: populatedInvoice,
-      message: 'Fattura creata con successo'
-    }
-
+      message: "Fattura creata con successo",
+    };
   } catch (error) {
-    console.error('Errore API create invoice:', error)
+    console.error("Errore API create invoice:", error);
 
-    if (error.statusCode) throw error
+    if (error.statusCode) throw error;
 
     throw createError({
       statusCode: 500,
-      message: 'Errore nella creazione della fattura',
-      data: error.message
-    })
+      message: "Errore nella creazione della fattura",
+      data: error.message,
+    });
   }
-})
+});
 
 // ✅ Genera ID fattura progressivo - GESTISCE ID LEGACY ALFANUMERICI
 async function generateInvoiceId() {
   try {
     // Trova tutte le fatture e filtra solo quelle con ID numerici
     const allInvoices = await Invoice.find()
-      .select('invoiceId createdAt')
+      .select("invoiceId createdAt")
       .sort({ createdAt: -1 })
-      .lean()
+      .lean();
 
-    console.log('🔍 Fatture totali nel DB:', allInvoices.length)
+    console.log("🔍 Fatture totali nel DB:", allInvoices.length);
 
     // Filtra solo gli ID numerici validi e trova il massimo
     const numericIds = allInvoices
-      .map(inv => {
-        const num = parseInt(inv.invoiceId, 10)
-        return isNaN(num) ? null : num
+      .map((inv) => {
+        const num = parseInt(inv.invoiceId, 10);
+        return isNaN(num) ? null : num;
       })
-      .filter(num => num !== null)
+      .filter((num) => num !== null);
 
-    console.log('🔢 ID numerici trovati:', numericIds)
+    console.log("🔢 ID numerici trovati:", numericIds);
 
     if (numericIds.length === 0) {
       // Nessun ID numerico trovato, inizia da 1
-      console.log('✨ Prima fattura numerica - genero 00001')
-      return '00001'
+      console.log("✨ Prima fattura numerica - genero 00001");
+      return "00001";
     }
 
     // Trova il massimo tra gli ID numerici
-    const maxNum = Math.max(...numericIds)
-    const newNum = maxNum + 1
-    const newId = String(newNum).padStart(5, '0')
+    const maxNum = Math.max(...numericIds);
+    const newNum = maxNum + 1;
+    const newId = String(newNum).padStart(5, "0");
 
-    console.log(`✅ Massimo ID numerico: ${maxNum}, nuovo ID: ${newId}`)
+    console.log(`✅ Massimo ID numerico: ${maxNum}, nuovo ID: ${newId}`);
 
-    return newId
-
+    return newId;
   } catch (error) {
-    console.error('❌ Errore in generateInvoiceId:', error)
+    console.error("❌ Errore in generateInvoiceId:", error);
     // In caso di errore, usa timestamp come fallback
-    const fallbackId = String(Date.now()).slice(-5)
-    console.log('⚠️ Usando ID fallback:', fallbackId)
-    return fallbackId
+    const fallbackId = String(Date.now()).slice(-5);
+    console.log("⚠️ Usando ID fallback:", fallbackId);
+    return fallbackId;
   }
 }

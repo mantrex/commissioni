@@ -1,55 +1,47 @@
 <template>
-  <component-dialog
-    :model-value="modelValue"
-    @update:model-value="$emit('update:modelValue', $event)"
-    title="Nuova Fattura"
-    side
-    :width="380"
-  >
-    <template #content>
-      <div class="q-pa-md column gap-md">
-        <q-select
-          v-model="selectedType"
-          :options="typeOptions"
-          label="Tipo fattura"
-          emit-value
-          map-options
-          outlined
-          dense
-          @update:model-value="fetchNextNumber"
-        />
+  <div class="new-invoice-dialog">
+    <div class="q-pa-md column q-gutter-md">
 
-        <div class="invoice-preview" v-if="previewNumber">
-          <div class="preview-label">Numero fattura proposto</div>
-          <div class="preview-number">{{ previewNumber }}</div>
-        </div>
+      <q-select
+        v-model="selectedType"
+        :options="typeOptions"
+        label="Tipo fattura"
+        emit-value
+        map-options
+        outlined
+        dense
+        @update:model-value="fetchNextNumber"
+      />
 
-        <div v-if="loading" class="text-center q-py-sm">
-          <q-spinner size="24px" color="primary" />
-        </div>
+      <div class="invoice-preview" v-if="previewNumber && !loading">
+        <div class="preview-label">Numero fattura</div>
+        <div class="preview-number">{{ previewNumber }}</div>
       </div>
-    </template>
 
-    <template #actions>
-      <q-btn flat label="Annulla" @click="$emit('update:modelValue', false)" />
+      <div v-if="loading" class="text-center q-py-md">
+        <q-spinner size="28px" color="primary" />
+      </div>
+
+    </div>
+
+    <div class="dialog-actions q-pa-md q-pt-none">
+      <q-btn flat label="Annulla" color="negative" @click="emit('close', null)" />
       <q-btn
         color="primary"
         label="Crea Fattura"
+        unelevated
+        icon="add"
         :disable="!previewNumber || loading"
         @click="handleConfirm"
       />
-    </template>
-  </component-dialog>
+    </div>
+  </div>
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 
-const props = defineProps({
-  modelValue: Boolean
-})
-
-const emit = defineEmits(['update:modelValue', 'confirm'])
+const emit = defineEmits(['close'])
 
 const typeOptions = [
   { label: 'E - Export', value: 'E' },
@@ -82,34 +74,33 @@ const fetchNextNumber = async () => {
 }
 
 const handleConfirm = () => {
-  emit('confirm', {
+  emit('close', {
+    invoiceId: previewNumber.value,
     invoiceType: selectedType.value,
     invoiceNumber: nextNumber.value,
-    invoiceYear: currentYear,
-    invoiceId: previewNumber.value
+    invoiceYear: currentYear
   })
-  emit('update:modelValue', false)
 }
 
-// Carica subito alla apertura del dialog
-watch(() => props.modelValue, (val) => {
-  if (val) {
-    selectedType.value = 'E'
-    fetchNextNumber()
-  }
+onMounted(() => {
+  fetchNextNumber()
 })
 </script>
 
 <style scoped lang="scss">
+.new-invoice-dialog {
+  min-width: 340px;
+}
+
 .invoice-preview {
   padding: 12px 16px;
-  background: var(--q-primary);
+  background: $primary;
   border-radius: 8px;
   text-align: center;
 
   .preview-label {
     font-size: 11px;
-    color: rgba(white, 0.8);
+    color: rgba(255, 255, 255, 0.8);
     text-transform: uppercase;
     letter-spacing: 0.5px;
     margin-bottom: 4px;
@@ -121,5 +112,11 @@ watch(() => props.modelValue, (val) => {
     color: white;
     letter-spacing: 2px;
   }
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }
 </style>
