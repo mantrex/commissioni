@@ -2,147 +2,199 @@
   <q-page class="invoices-page">
     <!-- Sidebar con menu principale -->
     <div class="sidebar">
-      <q-btn class="menu-btn" color="primary" icon="add" label="Nuova" unelevated @click="handleNewInvoice" />
+      <q-btn
+        class="menu-btn"
+        color="primary"
+        icon="add"
+        label="Nuova"
+        unelevated
+        @click="handleNewInvoice" />
 
-      <q-btn class="menu-btn" color="secondary" icon="search" label="Ricerca" unelevated
+      <q-btn
+        class="menu-btn"
+        color="secondary"
+        icon="search"
+        label="Ricerca"
+        unelevated
         @click="toggleAdvancedFilters" />
 
-      <q-btn class="menu-btn" color="info" icon="arrow_back" label="Commissioni" unelevated
+      <q-btn
+        class="menu-btn"
+        color="info"
+        icon="arrow_back"
+        label="Commissioni"
+        unelevated
         @click="handleBackToOrders" />
     </div>
 
     <!-- Contenuto principale -->
     <div class="main-content">
       <!-- Filtri -->
-      <InvoicesFilters v-model:filters="filters" v-model:show-advanced="showAdvancedFilters"
-        :total-invoices="totalInvoices" @search="handleSearch" @reset="handleReset" />
+      <InvoicesFilters
+        v-model:filters="filters"
+        v-model:show-advanced="showAdvancedFilters"
+        :total-invoices="totalInvoices"
+        @search="handleSearch"
+        @reset="handleReset" />
 
       <!-- Tabella fatture -->
-      <InvoicesTable v-model:pagination="pagination" :invoices="invoices" :loading="loading" @request="onRequest"
-        @row-click="handleRowClick" @edit="handleEdit" />
+      <InvoicesTable
+        v-model:pagination="pagination"
+        :invoices="invoices"
+        :loading="loading"
+        @request="onRequest"
+        @row-click="handleRowClick"
+        @edit="handleEdit" />
     </div>
+    <ComponentDialog
+      :side="true"
+      v-model="newInvoiceDialog.show"
+      title="Nuova Fattura"
+      :component-name="NewInvoiceDialog"
+      :component-props="{}"
+      custom-style="width: 420px"
+      @close="handleNewInvoiceDialogClose" />
   </q-page>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useQuasar } from 'quasar'
-import InvoicesFilters from '~/components/invoices/InvoicesFilters.vue'
-import InvoicesTable from '~/components/invoices/InvoicesTable.vue'
+import { ref, reactive, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { useQuasar } from "quasar";
+import InvoicesFilters from "~/components/invoices/InvoicesFilters.vue";
+import InvoicesTable from "~/components/invoices/InvoicesTable.vue";
+import ComponentDialog from "~/components/common/ComponentDialog.vue";
+import NewInvoiceDialog from "~/components/invoices/NewInvoiceDialog.vue";
 
-const router = useRouter()
-const $q = useQuasar()
+const router = useRouter();
+const $q = useQuasar();
 
-const loading = ref(false)
-const invoices = ref([])
-const totalInvoices = ref(0)
-const showAdvancedFilters = ref(false)
+const loading = ref(false);
+const invoices = ref([]);
+const totalInvoices = ref(0);
+const showAdvancedFilters = ref(false);
 
 const filters = reactive({
-  invoiceId: '',
-  clientName: '',
-  commNum: '',
+  invoiceId: "",
+  clientName: "",
+  commNum: "",
   issued: null,
   dateFrom: null,
-  dateTo: null
-})
+  dateTo: null,
+});
 
 const pagination = ref({
-  sortBy: 'invoiceDate',
+  sortBy: "invoiceDate",
   descending: true,
   page: 1,
   rowsPerPage: 25,
-  rowsNumber: 0
-})
+  rowsNumber: 0,
+});
+const newInvoiceDialog = reactive({ show: false });
 
 const loadInvoices = async () => {
-  loading.value = true
+  loading.value = true;
 
   try {
     const params = new URLSearchParams({
       page: pagination.value.page,
       limit: pagination.value.rowsPerPage,
       sortBy: pagination.value.sortBy,
-      sortDesc: pagination.value.descending ? 'true' : 'false'
-    })
+      sortDesc: pagination.value.descending ? "true" : "false",
+    });
 
-    if (filters.invoiceId) params.append('invoiceId', filters.invoiceId)
-    if (filters.clientName) params.append('clientName', filters.clientName)
-    if (filters.commNum) params.append('commNum', filters.commNum)
-    if (filters.issued !== null) params.append('issued', filters.issued)
-    if (filters.dateFrom) params.append('dateFrom', filters.dateFrom)
-    if (filters.dateTo) params.append('dateTo', filters.dateTo)
+    if (filters.invoiceId) params.append("invoiceId", filters.invoiceId);
+    if (filters.clientName) params.append("clientName", filters.clientName);
+    if (filters.commNum) params.append("commNum", filters.commNum);
+    if (filters.issued !== null) params.append("issued", filters.issued);
+    if (filters.dateFrom) params.append("dateFrom", filters.dateFrom);
+    if (filters.dateTo) params.append("dateTo", filters.dateTo);
 
-    const { data, error } = await useFetch(`/api/invoices?${params.toString()}`)
+    const { data, error } = await useFetch(
+      `/api/invoices?${params.toString()}`,
+    );
 
     if (error.value) {
-      throw new Error(error.value.message || 'Errore nel caricamento')
+      throw new Error(error.value.message || "Errore nel caricamento");
     }
 
-    invoices.value = data.value.invoices || []
-    totalInvoices.value = data.value.total || 0
-    pagination.value.rowsNumber = totalInvoices.value
-
+    invoices.value = data.value.invoices || [];
+    totalInvoices.value = data.value.total || 0;
+    pagination.value.rowsNumber = totalInvoices.value;
   } catch (err) {
     $q.notify({
-      type: 'negative',
-      message: 'Errore nel caricamento delle fatture',
-      caption: err.message
-    })
+      type: "negative",
+      message: "Errore nel caricamento delle fatture",
+      caption: err.message,
+    });
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const onRequest = (props) => {
-  const { page, rowsPerPage, sortBy, descending } = props.pagination
-  pagination.value.page = page
-  pagination.value.rowsPerPage = rowsPerPage
-  pagination.value.sortBy = sortBy
-  pagination.value.descending = descending
-  loadInvoices()
-}
+  const { page, rowsPerPage, sortBy, descending } = props.pagination;
+  pagination.value.page = page;
+  pagination.value.rowsPerPage = rowsPerPage;
+  pagination.value.sortBy = sortBy;
+  pagination.value.descending = descending;
+  loadInvoices();
+};
 
 const handleSearch = () => {
-  pagination.value.page = 1
-  loadInvoices()
-}
+  pagination.value.page = 1;
+  loadInvoices();
+};
 
 const handleReset = () => {
-  filters.invoiceId = ''
-  filters.clientName = ''
-  filters.commNum = ''
-  filters.issued = null
-  filters.dateFrom = null
-  filters.dateTo = null
-  pagination.value.page = 1
-  loadInvoices()
-}
+  filters.invoiceId = "";
+  filters.clientName = "";
+  filters.commNum = "";
+  filters.issued = null;
+  filters.dateFrom = null;
+  filters.dateTo = null;
+  pagination.value.page = 1;
+  loadInvoices();
+};
 
 const toggleAdvancedFilters = () => {
-  showAdvancedFilters.value = !showAdvancedFilters.value
-}
+  showAdvancedFilters.value = !showAdvancedFilters.value;
+};
 
 const handleRowClick = (row) => {
-  router.push(`/invoices/${row._id}`)
-}
+  router.push(`/invoices/${row._id}`);
+};
 
 const handleEdit = (row) => {
-  router.push(`/invoices/${row._id}`)
-}
+  router.push(`/invoices/${row._id}`);
+};
 
 const handleNewInvoice = () => {
-  router.push('/invoices/new')
-}
+  newInvoiceDialog.show = true;
+};
 
 const handleBackToOrders = () => {
-  router.push('/')
-}
+  router.push("/");
+};
+
+const handleNewInvoiceDialogClose = (result) => {
+  newInvoiceDialog.show = false;
+  if (!result) return;
+  // result = { invoiceId, invoiceType, invoiceNumber, invoiceYear }
+  router.push({
+    path: "/invoices/new",
+    query: {
+      invoiceId: result.invoiceId,
+      invoiceType: result.invoiceType,
+      invoiceNumber: result.invoiceNumber,
+      invoiceYear: result.invoiceYear,
+    },
+  });
+};
 
 onMounted(() => {
-  loadInvoices()
-})
+  loadInvoices();
+});
 </script>
 
 <style scoped lang="scss">

@@ -16,6 +16,11 @@ export const APP_CONFIG = [
     value: ["firstname", "lastname"],
     active: true,
   },
+  {
+    code: "INVOICEFORMAT",
+    value: "{TYPE}00{VALUE}/{YEAR}",
+    active: true,
+  },
 ];
 
 /**
