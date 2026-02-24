@@ -19,7 +19,11 @@
             <span class="order-number-badge">
               <span class="commission-label">Comm.</span>
               {{ orderData.commNum }}
-              <span v-if="orderData.client || orderData.company" class="separator">•</span>
+              <span
+                v-if="orderData.client || orderData.company"
+                class="separator"
+                >•</span
+              >
               <span v-if="orderData.client" class="client-name">
                 {{ getClientName(orderData.client) }}
               </span>
@@ -206,6 +210,14 @@
       }"
       custom-style="width: 400px"
       @close="handleCancelConfirm" />
+    <ComponentDialog
+      :side="true"
+      v-model="dialogs.invoices.show"
+      title="Fatture Commissione"
+      :component-name="OrderInvoicesDialog"
+      :component-props="{ commNum: orderData.commNum, orderId: orderId }"
+      custom-style="width: 500px"
+      @close="handleInvoiceDialogClose" />
   </q-page>
 </template>
 
@@ -225,10 +237,11 @@ import ItemDialog from "./ItemDialog.vue";
 import AgentDialog from "./AgentDialog.vue";
 import NewOrderDialog from "~/components/orders/NewOrderDialog.vue";
 import { getConfigValue, isConfigActive } from "#shared/config";
+import OrderInvoicesDialog from "~/components/invoices/OrderInvoicesDialog.vue";
 
 // ─── Autosave ───
-const autosaveEnabled = isConfigActive("AUTOSAVE");
-const autosaveSeconds = getConfigValue("AUTOSAVE", 30);
+const autosaveEnabled = isConfigActive("AUTOSAVE_ORDERS");
+const autosaveSeconds = getConfigValue("AUTOSAVE_ORDERS");
 let autosaveTimer = null;
 
 const router = useRouter();
@@ -251,6 +264,7 @@ const { statuses: allStatuses, loadStatuses } = useStatuses();
 const orderData = reactive({
   commNum: presetCommNum,
   client: null,
+  invoices: { show: false },
   orderData: {
     date: new Date().toISOString().split("T")[0],
     dueDate: null,
@@ -275,6 +289,7 @@ const dialogs = reactive({
   commNum: { show: false },
   removeItem: { show: false, pendingIndex: null },
   cancel: { show: false },
+  invoices: {show:false},
 });
 
 // ─── Computed ───
@@ -454,60 +469,24 @@ const handleCancelConfirm = (confirmed) => {
 };
 
 // ─── Fattura ───
-const handleInvoice = async () => {
-  if (!canCreateInvoice.value) {
-    $q.notify({
-      type: "warning",
-      message: "Nessun articolo fatturato in questa commissione",
-    });
-    return;
-  }
-  try {
-    const { data: checkData } = await useFetch(
-      `/api/invoices/check-existing?commNum=${orderData.commNum}`,
-    );
-    if (checkData.value?.exists) {
-      const existingInvoice = checkData.value.invoice;
-      $q.dialog({
-        title: "Fattura esistente",
-        message: `Esiste già la fattura n. ${existingInvoice.invoiceId} per questa commissione.`,
-        options: {
-          type: "radio",
-          model: "view",
-          items: [
-            { label: "Vai alla fattura esistente", value: "view" },
-            { label: "Crea una nuova fattura", value: "create" },
-          ],
-        },
-        cancel: { label: "Annulla", flat: true },
-        ok: { label: "Continua", color: "primary" },
-        persistent: true,
-      }).onOk((choice) => {
-        if (choice === "view") {
-          router.push(`/invoices/edit?id=${existingInvoice._id}`);
-        } else {
-          $q.dialog({
-            title: "Conferma creazione",
-            message:
-              "Creando una nuova fattura potresti generare un duplicato. Sei sicuro?",
-            cancel: { label: "Annulla", flat: true },
-            ok: { label: "Crea nuova fattura", color: "negative" },
-            persistent: true,
-          }).onOk(() => {
-            router.push(`/invoices/edit?commNum=${orderData.commNum}`);
-          });
-        }
-      });
-      return;
-    }
-    router.push(`/invoices/edit?commNum=${orderData.commNum}`);
-  } catch (err) {
-    $q.notify({
-      type: "negative",
-      message: "Errore nel controllo fattura",
-      caption: err.message,
-    });
-  }
+const handleInvoice = () => {
+  dialogs.invoices.show = true;
+};
+
+const handleInvoiceDialogClose = (result) => {
+  dialogs.invoices.show = false;
+  if (!result) return;
+  router.push({
+    path: "/invoices/new",
+    query: {
+      invoiceId: result.invoiceId,
+      invoiceType: result.invoiceType,
+      invoiceNumber: result.invoiceNumber,
+      invoiceYear: result.invoiceYear,
+      commNum: result.commNum,
+      orderId: result.orderId,
+    },
+  });
 };
 
 // ─── CommNum ───
@@ -635,7 +614,7 @@ const handleAgentDialogClose = (savedAgent) => {
 };
 
 const startAutosave = () => {
-  if (!autosaveEnabled || isNew) return;
+  if (!autosaveEnabled) return;
   autosaveTimer = setInterval(async () => {
     const anyDialogOpen = Object.values(dialogs).some((d) => d.show);
     if (saving.value || !orderData.client?._id || anyDialogOpen) return;

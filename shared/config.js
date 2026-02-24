@@ -6,11 +6,8 @@
 // Uso nel server:  import { getConfigValue } from '#shared/config'
 
 export const APP_CONFIG = [
-  {
-    code: "AUTOSAVE",
-    value: 10, // secondi tra un autosave e l'altro (0 = disabilitato)
-    active: true,
-  },
+  { code: "AUTOSAVE_ORDERS", value: 10, active: true },
+  { code: "AUTOSAVE_INVOICES", value: 10, active: true },
   {
     code: "PRINTFIELDS",
     value: ["firstname", "lastname"],

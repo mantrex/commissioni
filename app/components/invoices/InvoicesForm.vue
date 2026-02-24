@@ -20,7 +20,7 @@
             <span>Fatt. Proforma {{ invoiceData.invoiceId }}</span>
           </div>
           <span class="invoice-info">
-            <span v-if="displayCommNum" class="separator"> di </span>
+            <span v-if="(invoiceData.company || invoiceData.firstname || invoiceData.lastname) && displayCommNum" class="separator"> di </span>
             <span v-if="displayCommNum" class="comm-ref"
               >Comm. {{ displayCommNum }}</span
             >
@@ -101,7 +101,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from "vue";
+import { ref, reactive, computed, onMounted, onUnmounted} from "vue";
 import { useRouter } from "vue-router";
 import { useQuasar } from "quasar";
 import ClientData from "~/components/invoice-edit/ClientData.vue";
@@ -111,6 +111,7 @@ import PackingData from "~/components/invoice-edit/PackingData.vue";
 import Receipts from "~/components/invoice-edit/Receipts.vue";
 import FinancialTotal from "~/components/invoice-edit/FinancialTotal.vue";
 import InvoiceItems from "~/components/invoice-edit/InvoiceItems.vue";
+import { getConfigValue, isConfigActive } from "#shared/config";
 
 const props = defineProps({
   mode: {
@@ -134,6 +135,10 @@ const isNew = computed(() => props.mode === "new");
 const displayCommNum = computed(
   () => props.commNum || invoiceData.invoiceData.commNum,
 );
+
+const autosaveEnabled = isConfigActive("AUTOSAVE_INVOICES");
+const autosaveSeconds = getConfigValue("AUTOSAVE_INVOICES");
+let autosaveTimer = null;
 
 const invoiceData = reactive({
   invoiceId: "",
@@ -390,13 +395,20 @@ const handleSave = async () => {
   }
 };
 
-// Nello script
+
 const handleAutoSave = async () => {
-  console.log("🔄 Auto-save items...");
+  if (!autosaveEnabled) return
+  // Funziona sia per nuove (ha invoiceId preset) che per esistenti
+  const idToSave = props.invoiceId || (isNew.value ? invoiceData.invoiceId : null)
+  if (!idToSave || saving.value) return
 
   try {
     const payload = {
       invoiceData: invoiceData.invoiceData,
+      invoiceId: invoiceData.invoiceId,
+      invoiceType: invoiceData.invoiceType,
+      invoiceNumber: invoiceData.invoiceNumber,
+      invoiceYear: invoiceData.invoiceYear,
       client: invoiceData.client,
       receipts: invoiceData.receipts.filter((r) => r.number),
       items: invoiceData.items,
@@ -404,24 +416,45 @@ const handleAutoSave = async () => {
       packing: invoiceData.packing,
       packages: invoiceData.packages,
       shippingLabel: invoiceData.shippingLabel,
-    };
+    }
 
-    const { data, error } = await $fetch(`/api/invoices/${props.invoiceId}`, {
-      method: "PUT",
-      body: payload,
-    });
+    if (isNew.value) {
+      // Fattura nuova: POST (crea se non esiste ancora)
+      const data = await $fetch("/api/invoices", { method: "POST", body: payload })
+      if (data?.invoice?._id) {
+        invoiceData.invoiceId = data.invoice.invoiceId
+        router.replace(`/invoices/edit?id=${data.invoice._id}`)
+      }
+    } else {
+      await $fetch(`/api/invoices/${props.invoiceId}`, { method: "PUT", body: payload })
+    }
 
-    if (error) throw error;
-
-    console.log("✅ Auto-save completato");
+    $q.notify({ message: "", icon: "sync", color: "grey-7", position: "bottom-left", timeout: 1500 })
   } catch (err) {
-    console.error("❌ Errore auto-save:", err);
+    console.error("❌ Errore auto-save fattura:", err)
   }
-};
+}
+
+const startAutosave = () => {
+  if (!autosaveEnabled) return
+  autosaveTimer = setInterval(() => {
+    if (!saving.value) handleAutoSave()
+  }, autosaveSeconds * 1000)
+}
+
+const stopAutosave = () => {
+  if (autosaveTimer) { clearInterval(autosaveTimer); autosaveTimer = null }
+}
 
 onMounted(async () => {
   await loadInvoice();
+  startAutosave();
 });
+
+onUnmounted(() => {
+  stopAutosave();
+});
+
 </script>
 
 <style scoped lang="scss">
