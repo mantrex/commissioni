@@ -49,6 +49,20 @@
     <!-- Separatore -->
     <q-separator class="q-my-md" />
 
+    <!-- Avviso se non ci sono articoli fatturabili (solo quando viene da una commissione) -->
+    <q-banner
+      v-if="fromOrder && !canCreate"
+      dense rounded
+      class="no-invoiceable-banner q-mb-md">
+      <template #avatar>
+        <q-icon name="info" color="warning" />
+      </template>
+      <span class="text-caption">
+        Per creare una fattura, marca almeno un articolo come fatturato
+        (colonna <strong>F.</strong> nella lista articoli).
+      </span>
+    </q-banner>
+
     <!-- Sezione crea nuova fattura -->
     <div class="new-invoice-section">
       <div class="section-title">
@@ -65,10 +79,11 @@
           map-options
           outlined
           dense
+          :disable="fromOrder && !canCreate"
           @update:model-value="fetchNextNumber"
         />
 
-        <div class="invoice-preview q-mt-md" v-if="previewNumber && !fetchingNumber">
+        <div class="invoice-preview q-mt-md" v-if="previewNumber && !fetchingNumber && (!fromOrder || canCreate)">
           <div class="preview-label">Numero fattura proposto</div>
           <div class="preview-number">{{ previewNumber }}</div>
         </div>
@@ -85,9 +100,13 @@
           label="Crea Fattura"
           unelevated
           icon="add"
-          :disable="!previewNumber || fetchingNumber"
+          :disable="!previewNumber || fetchingNumber || (fromOrder && !canCreate)"
           @click="handleConfirm"
-        />
+        >
+          <q-tooltip v-if="fromOrder && !canCreate">
+            Nessun articolo marcato come fatturato
+          </q-tooltip>
+        </q-btn>
       </div>
     </div>
 
@@ -100,7 +119,11 @@ import { useRouter } from 'vue-router'
 
 const props = defineProps({
   commNum: { type: String, default: null },
-  orderId: { type: String, default: null }
+  orderId: { type: String, default: null },
+  // true = aperto da commissione, false = standalone (sempre abilitato)
+  fromOrder: { type: Boolean, default: false },
+  // almeno un item con invoiced > 0
+  canCreate: { type: Boolean, default: true }
 })
 
 const emit = defineEmits(['close'])
@@ -125,7 +148,7 @@ const loadInvoices = async () => {
 
 const handleOpenInvoice = (inv) => {
   emit('close', null)
-  router.push(`/invoices/${inv._id}`)
+  router.push(`/invoices/edit?id=${inv._id}`)
 }
 
 // ─── Nuova fattura ───
@@ -288,6 +311,12 @@ onMounted(() => {
   .open-btn {
     flex-shrink: 0;
   }
+}
+
+.no-invoiceable-banner {
+  background: rgba($warning, 0.12);
+  border: 1px solid rgba($warning, 0.3);
+  border-radius: 6px;
 }
 
 .new-invoice-section {

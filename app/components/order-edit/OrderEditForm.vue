@@ -54,14 +54,9 @@
               dense
               icon="receipt"
               @click.stop="handleInvoice"
-              :disable="!canCreateInvoice"
               class="action-btn invoice-btn">
               <span class="btn-label">Fattura</span>
-              <q-tooltip>{{
-                canCreateInvoice
-                  ? "Crea fattura da questa commissione"
-                  : "Nessun articolo fatturato"
-              }}</q-tooltip>
+              <q-tooltip>Gestisci fatture di questa commissione</q-tooltip>
             </q-btn>
             <q-btn
               flat
@@ -215,7 +210,7 @@
       v-model="dialogs.invoices.show"
       title="Fatture Commissione"
       :component-name="OrderInvoicesDialog"
-      :component-props="{ commNum: orderData.commNum, orderId: orderId }"
+      :component-props="{ commNum: orderData.commNum, orderId: orderId, canCreate: canCreateInvoice }"
       custom-style="width: 500px"
       @close="handleInvoiceDialogClose" />
   </q-page>
@@ -289,7 +284,7 @@ const dialogs = reactive({
   commNum: { show: false },
   removeItem: { show: false, pendingIndex: null },
   cancel: { show: false },
-  invoices: {show:false},
+  invoices: { show: false },
 });
 
 // ─── Computed ───
