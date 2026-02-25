@@ -18,7 +18,7 @@
     <div class="main-content">
       <!-- Filtri -->
       <OrdersFilters v-model:filters="filters" v-model:show-advanced="showAdvancedFilters" :total-orders="totalOrders"
-        @search="handleSearch" @reset="handleReset" />
+        @search="handleSearch" @reset="handleReset"   @print="handlePrint" />
 
       <!-- Tabella ordini -->
       <OrdersTable v-model:pagination="pagination" :orders="orders" :loading="loading" @request="onRequest"
@@ -47,6 +47,7 @@ import OrdersTable from './OrdersTable.vue'
 import ComponentDialog from '~/components/common/ComponentDialog.vue'
 import NewOrderDialog from './NewOrderDialog.vue'
 
+const { printing, printOrders } = useOrderPrint()
 const authStore = useAuthStore()
 const router = useRouter()
 const $q = useQuasar()
@@ -189,6 +190,10 @@ const handleInvoice = () => {
 
 const handleExit = () => {
   authStore.logout()
+}
+
+const handlePrint = () => {
+  printOrders(filters, defaultExpiredDays)
 }
 
 // =============================================

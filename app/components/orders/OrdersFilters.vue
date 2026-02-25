@@ -27,21 +27,22 @@
           <!-- Giorni personalizzati (se custom) -->
           <div class="col-12 col-md-2" v-if="localFilters.expiredFilter === 'custom'">
             <q-input v-model.number="localFilters.customDays" outlined dense type="number" label="Giorni" min="0">
-              <template v-slot:append>
-                gg
+              <template v-slot:append >
+                <span style="font-size:14px">gg</span>
               </template>
             </q-input>
           </div>
 
           <!-- Pulsanti azione -->
-          <div class="col-12 col-md-4 row q-gutter-sm justify-end">
+          <div class="col-12 col-md-4 row q-gutter-sm justify-end ">
             <q-btn color="primary" icon="search" label="Cerca" unelevated @click="emit('search')" />
 
             <q-btn flat color="secondary" :icon="showAdvanced ? 'expand_less' : 'expand_more'"
-              :label="showAdvanced ? 'Meno filtri' : 'Ricerca avanzata'"
+              :label="showAdvanced ? 'Meno filtri' : 'Altri filtri'"
               @click="emit('update:showAdvanced', !showAdvanced)" />
 
             <q-btn flat color="negative" icon="clear" label="Reset" @click="emit('reset')" />
+            <q-btn flat color="purple" icon="print" label="Stampa" unelevated @click="emit('print')" />
           </div>
         </div>
 
@@ -197,11 +198,12 @@ const props = defineProps({
   totalOrders: {
     type: Number,
     default: 0
-  }
+  },
+   printing: { type: Boolean, default: false }
 })
 
 // Emits
-const emit = defineEmits(['update:filters', 'update:showAdvanced', 'search', 'reset'])
+const emit = defineEmits(['update:filters', 'update:showAdvanced', 'search', 'reset','print'])
 
 // Local state
 const localFilters = computed({

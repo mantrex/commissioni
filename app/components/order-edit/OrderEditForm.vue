@@ -56,7 +56,18 @@
               @click.stop="handleInvoice"
               class="action-btn invoice-btn">
               <span class="btn-label">Fattura</span>
-              <q-tooltip>Gestisci fatture di questa commissione</q-tooltip>
+              <q-tooltip class="bg-accent">Gestisci fatture di questa commissione</q-tooltip>
+            </q-btn>
+            <q-btn
+              v-if="!isNew"
+              flat
+              dense
+              icon="delete_forever"
+              @click.stop="handleDelete"
+              :loading="deleting"
+              class="action-btn delete-btn">
+              <span class="btn-label">Elimina</span>
+              <q-tooltip class="bg-negative">Elimina commissione</q-tooltip>
             </q-btn>
             <q-btn
               flat
@@ -205,14 +216,37 @@
       }"
       custom-style="width: 400px"
       @close="handleCancelConfirm" />
+
+    <!-- Dialog Fatture -->
     <ComponentDialog
       :side="true"
       v-model="dialogs.invoices.show"
       title="Fatture Commissione"
       :component-name="OrderInvoicesDialog"
-      :component-props="{ commNum: orderData.commNum, orderId: orderId, canCreate: canCreateInvoice }"
+      :component-props="{
+        commNum: orderData.commNum,
+        orderId: orderId,
+        canCreate: canCreateInvoice,
+      }"
       custom-style="width: 500px"
       @close="handleInvoiceDialogClose" />
+
+    <!-- Dialog conferma elimina commissione -->
+    <ComponentDialog
+      v-model="dialogs.delete.show"
+      title="Elimina commissione"
+      :component-name="GenericWarning"
+      :component-props="{
+        message: `Vuoi eliminare definitivamente la commissione ${orderData.commNum}? L\'operazione non è reversibile.`,
+        icon: 'delete_forever',
+        iconColor: 'negative',
+        confirmLabel: 'Elimina',
+        confirmColor: 'negative',
+        confirmIcon: 'delete_forever',
+        cancelLabel: 'Annulla',
+      }"
+      custom-style="width: 420px"
+      @close="handleDeleteConfirm" />
   </q-page>
 </template>
 
@@ -243,9 +277,15 @@ const router = useRouter();
 const route = useRoute();
 const $q = useQuasar();
 
-const orderId = route.params.id;
-const isNew = !orderId || orderId === "new";
+// ─── orderId e isNew REATTIVI ───
+// Usando computed invece di const, isNew si aggiorna automaticamente
+// quando router.replace() cambia l'URL da /orders/new a /orders/:mongoId
+// Questo è fondamentale per mostrare il tasto Elimina dopo il primo salvataggio
+const orderId = computed(() => route.params.id);
+const isNew = computed(() => !orderId.value || orderId.value === "new");
+
 const saving = ref(false);
+const deleting = ref(false);
 const topSectionCollapsed = ref(false);
 const quickNavRef = ref(null);
 
@@ -285,6 +325,7 @@ const dialogs = reactive({
   removeItem: { show: false, pendingIndex: null },
   cancel: { show: false },
   invoices: { show: false },
+  delete: { show: false },
 });
 
 // ─── Computed ───
@@ -338,9 +379,9 @@ const buildBody = () => ({
 
 // ─── Load ───
 const loadOrder = async () => {
-  if (isNew) return;
+  if (isNew.value) return;
   try {
-    const { data, error } = await useFetch(`/api/orders/${orderId}`);
+    const { data, error } = await useFetch(`/api/orders/${orderId.value}`);
     if (error.value) throw new Error(error.value.message);
 
     const order = data.value.order;
@@ -384,8 +425,10 @@ const loadOrder = async () => {
 const handleSave = async (silent = false) => {
   saving.value = true;
   try {
-    const endpoint = isNew ? "/api/orders" : `/api/orders/${orderId}`;
-    const method = isNew ? "POST" : "PUT";
+    const endpoint = isNew.value
+      ? "/api/orders"
+      : `/api/orders/${orderId.value}`;
+    const method = isNew.value ? "POST" : "PUT";
 
     const { data, error } = await useFetch(endpoint, {
       method,
@@ -393,7 +436,7 @@ const handleSave = async (silent = false) => {
     });
     if (error.value) throw new Error(error.value.message);
 
-    if (isNew && data.value?.order?._id) {
+    if (isNew.value && data.value?.order?._id) {
       router.replace(`/orders/${data.value.order._id}`);
       if (data.value.order.commNum)
         orderData.commNum = data.value.order.commNum;
@@ -415,7 +458,6 @@ const handleSave = async (silent = false) => {
 
 // ─── Nav handlers (ricevuti da QuickNav) ───
 const saveAndNavigate = async (targetId) => {
-  // Salva sempre, anche se nuovo (il commNum esiste già)
   await handleSave(true);
   router.push(`/orders/${targetId}`);
 };
@@ -448,7 +490,7 @@ const handleNavJump = async (commNumStr) => {
 };
 
 const handleStatusChange = async () => {
-  if (!isNew) {
+  if (!isNew.value) {
     await handleSave(true);
     $q.notify({ type: "positive", message: "Stato aggiornato", timeout: 1000 });
   }
@@ -537,8 +579,10 @@ const handleItemDialogClose = async (savedItem) => {
 
   try {
     saving.value = true;
-    const endpoint = isNew ? "/api/orders" : `/api/orders/${orderId}`;
-    const method = isNew ? "POST" : "PUT";
+    const endpoint = isNew.value
+      ? "/api/orders"
+      : `/api/orders/${orderId.value}`;
+    const method = isNew.value ? "POST" : "PUT";
 
     const { data, error } = await useFetch(endpoint, {
       method,
@@ -547,7 +591,7 @@ const handleItemDialogClose = async (savedItem) => {
     if (error.value) throw new Error(error.value.message);
 
     if (data.value?.order?.items) orderData.items = [...data.value.order.items];
-    if (isNew && data.value?.order?._id) {
+    if (isNew.value && data.value?.order?._id) {
       router.replace(`/orders/${data.value.order._id}`);
       if (data.value.order.commNum)
         orderData.commNum = data.value.order.commNum;
@@ -608,6 +652,62 @@ const handleAgentDialogClose = (savedAgent) => {
   }
 };
 
+// ─── Elimina commissione ───
+const handleDelete = async () => {
+  deleting.value = true;
+  try {
+    const result = await $fetch(`/api/orders/${orderId.value}/can-delete`);
+
+    if (!result.canDelete) {
+      const commNum = result.commNum || orderData.commNum;
+      const count = result.invoiceCount;
+      const label =
+        count === 1 ? "1 fattura collegata" : `${count} fatture collegate`;
+      $q.notify({
+        type: "negative",
+        icon: "block",
+        message: `Impossibile eliminare la commissione ${commNum}`,
+        caption: `Ha ${label}.`,
+        timeout: 6000,
+      });
+      return;
+    }
+
+    dialogs.delete.show = true;
+  } catch (err) {
+    $q.notify({
+      type: "negative",
+      message: "Errore nel controllo fatture",
+      caption: err.message,
+    });
+  } finally {
+    deleting.value = false;
+  }
+};
+
+const handleDeleteConfirm = async (confirmed) => {
+  if (!confirmed) return;
+
+  deleting.value = true;
+  try {
+    await $fetch(`/api/orders/${orderId.value}`, { method: "DELETE" });
+    $q.notify({
+      type: "positive",
+      message: `Commissione ${orderData.commNum} eliminata`,
+    });
+    router.push("/");
+  } catch (err) {
+    $q.notify({
+      type: "negative",
+      message: "Errore durante l'eliminazione",
+      caption: err.message,
+    });
+  } finally {
+    deleting.value = false;
+  }
+};
+
+// ─── Autosave ───
 const startAutosave = () => {
   if (!autosaveEnabled) return;
   autosaveTimer = setInterval(async () => {
@@ -751,8 +851,11 @@ onUnmounted(() => {
     .invoice-btn {
       color: $accent;
     }
-    .cancel-btn {
+    .delete-btn {
       color: $negative;
+    }
+    .cancel-btn {
+      color: $middle-contrast;
     }
     .save-btn {
       color: $primary;
@@ -760,11 +863,9 @@ onUnmounted(() => {
   }
 
   // ── RESPONSIVE: sotto 750px ──
-  // Layout diventa: [← N° · ] [icone a destra]
-  // spariscono: client-name, commission-label, frecce nav, status
   @media (max-width: 750px) {
     .header-content {
-      grid-template-columns: auto 1fr auto; // back+num | input | icone
+      grid-template-columns: auto 1fr auto;
     }
 
     .commission-info {
@@ -775,12 +876,10 @@ onUnmounted(() => {
       }
     }
 
-    // Nasconde frecce e status dentro QuickNav
     :deep(.nav-only) {
       display: none !important;
     }
 
-    // Icone azioni: solo icona, niente label
     .action-btn {
       padding: 4px 6px;
       .btn-label {

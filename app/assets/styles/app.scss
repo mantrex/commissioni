@@ -23,6 +23,14 @@ body {
   color: $primary!important;
 }
 
+.bg-accent {
+  background: $accent !important;
+}
+
+.text-accent {
+  color: $accent !important;
+}
+
 @media print {
   .no-print {
     display: none !important;
