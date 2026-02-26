@@ -11,7 +11,7 @@ export const usePayments = () => {
     error.value = null
 
     try {
-      const { data } = await $fetch('/api/lists/payments', {
+      const  data  = await $fetch('/api/lists/payments', {
         params: { selectable: selectable ? 'true' : 'false' }
       })
 

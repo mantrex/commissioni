@@ -11,15 +11,11 @@ export const useCouriers = () => {
     error.value = null
 
     try {
-      const { data, error: fetchError } = await useFetch('/api/lists/couriers', {
+      const data = await $fetch('/api/lists/couriers', {
         params: { selectable: selectable ? 'true' : 'false' }
       })
 
-      if (fetchError.value) {
-        throw new Error(fetchError.value.message || 'Errore nel caricamento dei corrieri')
-      }
-
-      couriers.value = data.value?.couriers || []
+      couriers.value = data?.couriers || []
     } catch (err) {
       error.value = err.message
       console.error('Errore loadCouriers:', err)

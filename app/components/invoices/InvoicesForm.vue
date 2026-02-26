@@ -218,16 +218,15 @@ const loadInvoice = async () => {
   if (isNew.value && !props.commNum) return;
   try {
     if (!isNew.value && props.invoiceId) {
-      const { data, error } = await $fetch(
+      const data = await $fetch(
         `/api/invoices/${props.invoiceId}`,
       );
-      if (error) throw new Error(error.message);
       populateInvoiceData(data.invoice);
     } else if (props.commNum) {
-      const { data, error } = await $fetch(
+      const data = await $fetch(
         `/api/orders/by-commnum/${props.commNum}`,
       );
-      if (error) throw new Error(error.message);
+   
       populateFromOrder(data.order);
     }
   } catch (err) {
@@ -354,12 +353,10 @@ const handleSave = async () => {
     };
 
     if (isNew.value) {
-      const { data, error } = await $fetch("/api/invoices", {
+      const data = await $fetch("/api/invoices", {
         method: "POST",
         body: payload,
       });
-
-     
 
       $q.notify({ type: "positive", message: "Fattura creata" });
 
@@ -375,9 +372,6 @@ const handleSave = async () => {
           body: payload,
         },
       );
-
- 
-
       $q.notify({ type: "positive", message: "Fattura salvata" });
 
       if (data?.invoice) {

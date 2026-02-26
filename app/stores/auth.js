@@ -30,7 +30,7 @@ export const useAuthStore = defineStore("auth", {
 
     async logout() {
       try {
-        const { error } = await $fetch("/api/auth/logout", { method: "POST" })
+        await $fetch("/api/auth/logout", { method: "POST" })
 
         this.user = null
         this.isAuthenticated = false
@@ -43,16 +43,9 @@ export const useAuthStore = defineStore("auth", {
     async checkAuth() {
       try {
         // ✅ devi destrutturare { data, error }
-        const { data, error } = await $fetch("/api/auth/me", { method: "GET" })
+        const data = await $fetch("/api/auth/me", { method: "GET" })
 
-        if (error.value) {
-          // 401/403 ecc. -> non autenticato
-          this.user = null
-          this.isAuthenticated = false
-          return
-        }
-
-        this.user = data.user
+        this.user = data?.user
         this.isAuthenticated = !!this.user
       } catch {
         this.user = null
