@@ -7,13 +7,6 @@ export default defineEventHandler(async (event) => {
   try {
     const body = await readBody(event);
 
-    // Validazioni base
-    if (!body.client || !body.client._id) {
-      throw createError({
-        statusCode: 400,
-        message: "Cliente obbligatorio",
-      });
-    }
 
     // Genera/normalizza numero commissione
     let commNum = body.commNum;
@@ -38,7 +31,7 @@ export default defineEventHandler(async (event) => {
       commNum,
       date: body.orderData?.date || new Date(),
       dueDate: body.orderData?.dueDate || null,
-      clientId: body.client._id,
+      clientId: body.client._id || null,
       agentId: body.orderData?.agentId || null,
       status: body.orderData?.status || "APERTA",
       shipments: (body.shipments || []).filter((s) => s.date || s.courier),

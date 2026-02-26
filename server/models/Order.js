@@ -66,7 +66,6 @@ const orderSchema = new mongoose.Schema({
   clientId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Client',
-    required: true
   },
   agentId: {
     type: mongoose.Schema.Types.ObjectId,

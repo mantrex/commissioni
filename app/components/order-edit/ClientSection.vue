@@ -100,7 +100,7 @@ const showEmptyForm = ref(false)
 // Carica lista clienti
 const loadClients = async () => {
   try {
-    const { data } = await $fetch('/api/clients')
+    const data = await $fetch('/api/clients')
     if (data) {
       allClients.value = data.clients.map(c => {
         let label = ''

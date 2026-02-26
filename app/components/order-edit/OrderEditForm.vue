@@ -56,7 +56,9 @@
               @click.stop="handleInvoice"
               class="action-btn invoice-btn">
               <span class="btn-label">Fattura</span>
-              <q-tooltip class="bg-accent">Gestisci fatture di questa commissione</q-tooltip>
+              <q-tooltip class="bg-accent"
+                >Gestisci fatture di questa commissione</q-tooltip
+              >
             </q-btn>
             <q-btn
               v-if="!isNew"
@@ -72,19 +74,21 @@
             <q-btn
               flat
               dense
-              icon="cancel"
-              @click.stop="handleCancel"
-              class="action-btn cancel-btn">
-              <span class="btn-label">Annulla</span>
-            </q-btn>
-            <q-btn
-              flat
-              dense
               icon="save"
               @click.stop="handleSave"
               :loading="saving"
               class="action-btn save-btn">
               <span class="btn-label">Salva</span>
+            </q-btn>
+
+            <q-btn
+              flat
+              dense
+              icon="add_circle"
+              @click.stop="handleNewOrder"
+              class="action-btn new-btn">
+              <span class="btn-label">Nuova</span>
+              <q-tooltip>Crea nuova commissione</q-tooltip>
             </q-btn>
           </div>
         </div>
@@ -180,7 +184,7 @@
       v-model="dialogs.commNum.show"
       title="Modifica Numero Commissione"
       :component-name="NewOrderDialog"
-      :component-props="{}"
+      :component-props="{ initialCommNum: orderData.commNum }"
       custom-style="width: 440px"
       @close="handleCommNumDialogClose" />
 
@@ -247,6 +251,16 @@
       }"
       custom-style="width: 420px"
       @close="handleDeleteConfirm" />
+
+    <!-- Dialog Nuova Commissione -->
+    <ComponentDialog
+      :side="true"
+      v-model="dialogs.newOrder.show"
+      title="Nuova Commissione"
+      :component-name="NewOrderDialog"
+      :component-props="{}"
+      custom-style="width: 440px"
+      @close="handleNewOrderDialogClose" />
   </q-page>
 </template>
 
@@ -326,6 +340,7 @@ const dialogs = reactive({
   cancel: { show: false },
   invoices: { show: false },
   delete: { show: false },
+  newOrder: { show: false },
 });
 
 // ─── Computed ───
@@ -382,7 +397,6 @@ const loadOrder = async () => {
   if (isNew.value) return;
   try {
     const data = await $fetch(`/api/orders/${orderId.value}`);
-    
 
     const order = data.order;
     orderData.commNum = order.commNum || "";
@@ -435,11 +449,9 @@ const handleSave = async (silent = false) => {
       body: buildBody(),
     });
 
-
     if (isNew.value && data.order?._id) {
       router.replace(`/orders/${data.order._id}`);
-      if (data.order.commNum)
-        orderData.commNum = data.order.commNum;
+      if (data.order.commNum) orderData.commNum = data.order.commNum;
     }
 
     if (!silent) {
@@ -468,6 +480,18 @@ const handleNavPrev = async (prevOrder) => {
 
 const handleNavNext = async (nextOrder) => {
   await saveAndNavigate(nextOrder.id);
+};
+
+// ─── Nuova commissione ───
+const handleNewOrder = () => {
+  dialogs.newOrder.show = true;
+};
+
+const handleNewOrderDialogClose = (newCommNum) => {
+  dialogs.newOrder.show = false;
+  if (newCommNum) {
+    router.push(`/orders/new?commNum=${newCommNum}`);
+  }
 };
 
 const handleNavJump = async (commNumStr) => {
@@ -589,12 +613,10 @@ const handleItemDialogClose = async (savedItem) => {
       body: buildBody(),
     });
 
-
     if (result?.order?.items) orderData.items = [...result.order.items];
     if (isNew.value && result?.order?._id) {
       router.replace(`/orders/${result?.order?._id}`);
-      if (result?.order?.commNum)
-        orderData.commNum = result?.order?.commNum;
+      if (result?.order?.commNum) orderData.commNum = result?.order?.commNum;
     }
 
     $q.notify({
@@ -712,7 +734,7 @@ const startAutosave = () => {
   if (!autosaveEnabled) return;
   autosaveTimer = setInterval(async () => {
     const anyDialogOpen = Object.values(dialogs).some((d) => d.show);
-    if (saving.value || !orderData.client?._id || anyDialogOpen) return;
+    if (saving.value || !orderData.commNum || anyDialogOpen) return;
     await handleSave(true);
     $q.notify({
       message: "",
@@ -859,6 +881,9 @@ onUnmounted(() => {
     }
     .save-btn {
       color: $primary;
+    }
+    .new-btn {
+      color: $positive;
     }
   }
 

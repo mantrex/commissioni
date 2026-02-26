@@ -12,12 +12,6 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    if (!body.items || body.items.length === 0) {
-      throw createError({
-        statusCode: 400,
-        message: "Almeno un articolo è obbligatorio",
-      });
-    }
 
     // Genera ID fattura se non presente
     let invoiceId = body.invoiceId || body.invoiceData?.invoiceId;

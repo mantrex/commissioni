@@ -227,14 +227,11 @@ const handleSave = async () => {
       : '/api/clients'
     const method = localClient.value._id ? 'PUT' : 'POST'
 
-    const { data, error } = await $fetch(endpoint, {
+    const data = await $fetch(endpoint, {
       method,
       body: localClient.value
     })
 
-    if (error) {
-      throw new Error(error.message)
-    }
 
     $q.notify({
       type: 'positive',
