@@ -34,15 +34,15 @@
           </div>
 
           <!-- Pulsanti azione -->
-          <div class="col-12 col-md-4 row q-gutter-sm justify-end ">
+          <div class="col-12 col-md-6 row q-gutter-sm justify-end ">
             <q-btn color="primary" icon="search" label="Cerca" unelevated @click="emit('search')" />
 
             <q-btn flat color="secondary" :icon="showAdvanced ? 'expand_less' : 'expand_more'"
               :label="showAdvanced ? 'Meno filtri' : 'Altri filtri'"
               @click="emit('update:showAdvanced', !showAdvanced)" />
 
-            <q-btn flat color="negative" icon="clear" label="Reset" @click="emit('reset')" />
-            <q-btn flat color="purple" icon="print" label="Stampa" unelevated @click="emit('print')" />
+            <q-btn flat color="negative" icon="clear" @click="emit('reset')" />
+            <q-btn flat color="purple" icon="print"  unelevated @click="emit('print')" />
           </div>
         </div>
 

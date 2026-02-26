@@ -1,8 +1,8 @@
 export default defineNuxtConfig({
   ssr: false,
   devServer: {
-    port: 3000,
-    host: '0.0.0.0'
+    port: 3010,
+    host:  '0.0.0.0'
   },
   devtools: { enabled: true },
   ignore: ["temp/**", "public/temp/**"],
