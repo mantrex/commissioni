@@ -300,8 +300,8 @@ const loading = ref(true);
 onMounted(async () => {
   const id = route.params.id;
   try {
-    const { data } = await $(`/api/invoices/${id}`);
-    if (data?.invoice) invoice.value = data.value.invoice;
+    const { data } = await $fetch(`/api/invoices/${id}`);
+    if (data?.invoice) invoice.value = data.invoice;
   } catch (err) {
     console.error("Errore caricamento fattura:", err);
   } finally {

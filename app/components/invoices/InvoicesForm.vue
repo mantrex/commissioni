@@ -354,21 +354,21 @@ const handleSave = async () => {
     };
 
     if (isNew.value) {
-      const { data, error } = await useFetch("/api/invoices", {
+      const { data, error } = await $fetch("/api/invoices", {
         method: "POST",
         body: payload,
       });
 
-      if (error.value) throw new Error(error.value.message);
+     
 
       $q.notify({ type: "positive", message: "Fattura creata" });
 
-      if (data.value?.invoice?._id) {
-        invoiceData.invoiceId = data.value.invoice.invoiceId;
-        router.replace(`/invoices/edit?id=${data.value.invoice._id}`);
+      if (data?.invoice?._id) {
+        invoiceData.invoiceId = data?.invoice.invoiceId;
+        router.replace(`/invoices/edit?id=${data?.invoice._id}`);
       }
     } else {
-      const { data, error } = await useFetch(
+      const data = await $fetch(
         `/api/invoices/${props.invoiceId}`,
         {
           method: "PUT",
@@ -376,12 +376,12 @@ const handleSave = async () => {
         },
       );
 
-      if (error.value) throw new Error(error.value.message);
+ 
 
       $q.notify({ type: "positive", message: "Fattura salvata" });
 
-      if (data.value?.invoice) {
-        populateInvoiceData(data.value.invoice);
+      if (data?.invoice) {
+        populateInvoiceData(data.invoice);
       }
     }
   } catch (err) {

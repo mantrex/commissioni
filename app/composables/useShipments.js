@@ -11,7 +11,7 @@ export const useShipments = () => {
     error.value = null
 
     try {
-      const { data, error: fetchError } = await $fetch('/api/lists/shipments', {
+      const { data  } = await $fetch('/api/lists/shipments', {
         params: { selectable: selectable ? 'true' : 'false' }
       })
 

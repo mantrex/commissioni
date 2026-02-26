@@ -129,7 +129,7 @@ const clientOptions = ref([])
 // Carica lista clienti
 const loadClients = async () => {
   try {
-    const { data } = await $fetch('/api/clients')
+    const data  = await $fetch('/api/clients')
     if (data) {
       allClients.value = data.clients.map(c => {
         // Costruisci label: priorità a cognome+nome, poi ditta, poi "N/A"
