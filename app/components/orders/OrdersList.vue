@@ -119,16 +119,14 @@ const loadOrders = async () => {
     if (filters.dueDateFrom) params.append('dueDateFrom', filters.dueDateFrom)
     if (filters.dueDateTo) params.append('dueDateTo', filters.dueDateTo)
 
-    const { data, error } = await useFetch(`/api/orders?${params.toString()}`)
+    const data  = await $fetch(`/api/orders?${params.toString()}`)
 
-    if (error.value) {
-      throw new Error(error.value.message || 'Errore nel caricamento')
-    }
+ 
 
-    if (!data.value) return
+    if (!data) return
 
-    orders.value = data.value.orders || []
-    totalOrders.value = data.value.total || 0
+    orders.value = data.orders || []
+    totalOrders.value = data.total || 0
     pagination.value.rowsNumber = totalOrders.value
 
   } catch (err) {

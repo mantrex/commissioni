@@ -177,7 +177,7 @@ const toggleInvoiced = async (index, newValue) => {
   try {
     console.log('💾 Salvataggio automatico...')
 
-    const { data, error } = await useFetch(`/api/orders/${orderId}`, {
+    await $fetch(`/api/orders/${orderId}`, {
       method: 'PUT',
       body: {
         items: items.value.map(item => ({
@@ -193,9 +193,6 @@ const toggleInvoiced = async (index, newValue) => {
       }
     })
 
-    if (error.value) {
-      throw new Error(error.value.message || 'Errore salvataggio')
-    }
 
     console.log('✅ Salvato')
 

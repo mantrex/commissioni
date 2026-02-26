@@ -381,10 +381,10 @@ const buildBody = () => ({
 const loadOrder = async () => {
   if (isNew.value) return;
   try {
-    const { data, error } = await useFetch(`/api/orders/${orderId.value}`);
-    if (error.value) throw new Error(error.value.message);
+    const data = await $fetch(`/api/orders/${orderId.value}`);
+    
 
-    const order = data.value.order;
+    const order = data.order;
     orderData.commNum = order.commNum || "";
     orderData.client = order.clientId || null;
     orderData.orderData.date = order.date
@@ -430,14 +430,14 @@ const handleSave = async (silent = false) => {
       : `/api/orders/${orderId.value}`;
     const method = isNew.value ? "POST" : "PUT";
 
-    const data = await useFetch(endpoint, {
+    const data = await $fetch(endpoint, {
       method,
       body: buildBody(),
     });
 
 
     if (isNew.value && data.order?._id) {
-      router.replace(`/orders/${data.value.order._id}`);
+      router.replace(`/orders/${data.order._id}`);
       if (data.order.commNum)
         orderData.commNum = data.order.commNum;
     }
@@ -584,17 +584,17 @@ const handleItemDialogClose = async (savedItem) => {
       : `/api/orders/${orderId.value}`;
     const method = isNew.value ? "POST" : "PUT";
 
-    const orderData = await $fetch(endpoint, {
+    const result = await $fetch(endpoint, {
       method,
       body: buildBody(),
     });
 
 
-    if (data.value?.order?.items) orderData.items = [...data.value.order.items];
-    if (isNew.value && data.value?.order?._id) {
-      router.replace(`/orders/${data.value.order._id}`);
-      if (data.value.order.commNum)
-        orderData.commNum = data.value.order.commNum;
+    if (result?.order?.items) orderData.items = [...result.order.items];
+    if (isNew.value && result?.order?._id) {
+      router.replace(`/orders/${result?.order?._id}`);
+      if (result?.order?.commNum)
+        orderData.commNum = result?.order?.commNum;
     }
 
     $q.notify({

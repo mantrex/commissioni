@@ -11,7 +11,7 @@ export const useInsurances = () => {
     error.value = null
 
     try {
-      const { data  } = await $fetch('/api/lists/insurances', {
+      const  data  = await $fetch('/api/lists/insurances', {
         params: { selectable: selectable ? 'true' : 'false' }
       })
 
