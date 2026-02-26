@@ -11,15 +11,13 @@ export const useInsurances = () => {
     error.value = null
 
     try {
-      const { data, error: fetchError } = await useFetch('/api/lists/insurances', {
+      const { data, error: fetchError } = await $fetch('/api/lists/insurances', {
         params: { selectable: selectable ? 'true' : 'false' }
       })
 
-      if (fetchError.value) {
-        throw new Error(fetchError.value.message || 'Errore nel caricamento delle assicurazioni')
-      }
 
-      insurances.value = data.value?.insurances || []
+
+      insurances.value = data?.insurances || []
     } catch (err) {
       error.value = err.message
       console.error('Errore loadInsurances:', err)

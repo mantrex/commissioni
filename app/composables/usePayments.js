@@ -11,15 +11,12 @@ export const usePayments = () => {
     error.value = null
 
     try {
-      const { data, error: fetchError } = await useFetch('/api/lists/payments', {
+      const { data, error: fetchError } = await $fetch('/api/lists/payments', {
         params: { selectable: selectable ? 'true' : 'false' }
       })
 
-      if (fetchError.value) {
-        throw new Error(fetchError.value.message || 'Errore nel caricamento dei pagamenti')
-      }
+      payments.value = data?.payments || [];
 
-      payments.value = data.value?.payments || []
     } catch (err) {
       error.value = err.message
       console.error('Errore loadPayments:', err)

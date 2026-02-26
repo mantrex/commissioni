@@ -11,15 +11,12 @@ export const useShipments = () => {
     error.value = null
 
     try {
-      const { data, error: fetchError } = await useFetch('/api/lists/shipments', {
+      const { data, error: fetchError } = await $fetch('/api/lists/shipments', {
         params: { selectable: selectable ? 'true' : 'false' }
       })
 
-      if (fetchError.value) {
-        throw new Error(fetchError.value.message || 'Errore nel caricamento delle spedizioni')
-      }
+      shipments.value = data?.shipments || [];
 
-      shipments.value = data.value?.shipments || []
     } catch (err) {
       error.value = err.message
       console.error('Errore loadShipments:', err)

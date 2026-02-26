@@ -129,9 +129,9 @@ const clientOptions = ref([])
 // Carica lista clienti
 const loadClients = async () => {
   try {
-    const { data } = await useFetch('/api/clients')
-    if (data.value) {
-      allClients.value = data.value.clients.map(c => {
+    const { data } = await $fetch('/api/clients')
+    if (data) {
+      allClients.value = data.clients.map(c => {
         // Costruisci label: priorità a cognome+nome, poi ditta, poi "N/A"
         let label = ''
         const fullName = `${c.lastname || ''} ${c.firstname || ''}`.trim()
@@ -227,13 +227,13 @@ const handleSave = async () => {
       : '/api/clients'
     const method = localClient.value._id ? 'PUT' : 'POST'
 
-    const { data, error } = await useFetch(endpoint, {
+    const { data, error } = await $fetch(endpoint, {
       method,
       body: localClient.value
     })
 
-    if (error.value) {
-      throw new Error(error.value.message)
+    if (error) {
+      throw new Error(error.message)
     }
 
     $q.notify({
@@ -241,7 +241,7 @@ const handleSave = async () => {
       message: 'Cliente salvato con successo'
     })
 
-    emit('close', data.value.client)
+    emit('close', data.client)
 
   } catch (err) {
     $q.notify({

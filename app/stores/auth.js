@@ -11,18 +11,13 @@ export const useAuthStore = defineStore("auth", {
     async login(username, password) {
       this.loading = true
       try {
-        const { data, error } = await useFetch("/api/auth/login", {
+        const { data, error } = await $fetch("/api/auth/login", {
           method: "POST",
           body: { username, password }
         })
 
-        // ✅ error è un Ref -> devi leggere .value
-        if (error.value) {
-          throw new Error(error.value?.data?.message || error.value?.message || "Errore durante il login")
-        }
-
         // ✅ data è un Ref
-        this.user = data.value?.user ?? null
+        this.user = data?.user
         this.isAuthenticated = !!this.user
 
         return { success: true }

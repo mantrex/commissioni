@@ -73,9 +73,9 @@ const agentOptions = ref([])
 // Carica lista agenti
 const loadAgents = async () => {
   try {
-    const { data } = await useFetch('/api/agents')
-    if (data.value) {
-      allAgents.value = data.value.agents.map(a => ({
+    const { data } = await $fetch('/api/agents')
+    if (data) {
+      allAgents.value = data.agents.map(a => ({
         label: a.label,
         value: a.value,
         agent: { _id: a.value, lastname: a.label.split(' ')[0], firstname: a.label.split(' ')[1] || '' },
@@ -151,13 +151,13 @@ const handleSave = async () => {
       : '/api/agents'
     const method = localAgent.value._id ? 'PUT' : 'POST'
 
-    const { data, error } = await useFetch(endpoint, {
+    const { data, error } = await $fetch(endpoint, {
       method,
       body: localAgent.value
     })
 
-    if (error.value) {
-      throw new Error(error.value.message)
+    if (error) {
+      throw new Error(error.message)
     }
 
     $q.notify({
@@ -165,7 +165,7 @@ const handleSave = async () => {
       message: 'Agente salvato con successo'
     })
 
-    emit('close', data.value.agent)
+    emit('close', data.agent)
 
   } catch (err) {
     $q.notify({

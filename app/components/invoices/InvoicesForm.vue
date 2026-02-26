@@ -218,17 +218,17 @@ const loadInvoice = async () => {
   if (isNew.value && !props.commNum) return;
   try {
     if (!isNew.value && props.invoiceId) {
-      const { data, error } = await useFetch(
+      const { data, error } = await $fetch(
         `/api/invoices/${props.invoiceId}`,
       );
-      if (error.value) throw new Error(error.value.message);
-      populateInvoiceData(data.value.invoice);
+      if (error) throw new Error(error.message);
+      populateInvoiceData(data.invoice);
     } else if (props.commNum) {
-      const { data, error } = await useFetch(
+      const { data, error } = await $fetch(
         `/api/orders/by-commnum/${props.commNum}`,
       );
-      if (error.value) throw new Error(error.value.message);
-      populateFromOrder(data.value.order);
+      if (error) throw new Error(error.message);
+      populateFromOrder(data.order);
     }
   } catch (err) {
     $q.notify({
