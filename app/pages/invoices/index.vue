@@ -110,16 +110,14 @@ const loadInvoices = async () => {
     if (filters.dateFrom) params.append("dateFrom", filters.dateFrom);
     if (filters.dateTo) params.append("dateTo", filters.dateTo);
 
-    const { data, error } = await useFetch(
+    const data = await $fetch(
       `/api/invoices?${params.toString()}`,
     );
 
-    if (error.value) {
-      throw new Error(error.value.message || "Errore nel caricamento");
-    }
 
-    invoices.value = data.value.invoices || [];
-    totalInvoices.value = data.value.total || 0;
+
+    invoices.value = data.invoices || [];
+    totalInvoices.value = data.total || 0;
     pagination.value.rowsNumber = totalInvoices.value;
   } catch (err) {
     $q.notify({

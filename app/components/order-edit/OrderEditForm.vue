@@ -430,16 +430,16 @@ const handleSave = async (silent = false) => {
       : `/api/orders/${orderId.value}`;
     const method = isNew.value ? "POST" : "PUT";
 
-    const { data, error } = await useFetch(endpoint, {
+    const data = await useFetch(endpoint, {
       method,
       body: buildBody(),
     });
-    if (error.value) throw new Error(error.value.message);
 
-    if (isNew.value && data.value?.order?._id) {
+
+    if (isNew.value && data.order?._id) {
       router.replace(`/orders/${data.value.order._id}`);
-      if (data.value.order.commNum)
-        orderData.commNum = data.value.order.commNum;
+      if (data.order.commNum)
+        orderData.commNum = data.order.commNum;
     }
 
     if (!silent) {
@@ -584,11 +584,11 @@ const handleItemDialogClose = async (savedItem) => {
       : `/api/orders/${orderId.value}`;
     const method = isNew.value ? "POST" : "PUT";
 
-    const { data, error } = await useFetch(endpoint, {
+    const orderData = await $fetch(endpoint, {
       method,
       body: buildBody(),
     });
-    if (error.value) throw new Error(error.value.message);
+
 
     if (data.value?.order?.items) orderData.items = [...data.value.order.items];
     if (isNew.value && data.value?.order?._id) {
