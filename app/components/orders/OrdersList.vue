@@ -47,7 +47,7 @@
     <div class="main-content">
       <!-- Filtri -->
       <OrdersFilters
-        v-model:filters="filters"
+        :filters="filters"
         v-model:show-advanced="showAdvancedFilters"
         :total-orders="totalOrders"
         @search="handleSearch"

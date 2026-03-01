@@ -206,13 +206,12 @@ const props = defineProps({
 })
 
 // Emits
-const emit = defineEmits(['update:filters', 'update:showAdvanced', 'search', 'reset', 'print'])
+const emit = defineEmits(['update:showAdvanced', 'search', 'reset', 'print'])
 
-// Local state
-const localFilters = computed({
-  get: () => props.filters,
-  set: (val) => emit('update:filters', val)
-})
+// ✅ Accesso diretto: filters è lo useState condiviso, la mutazione diretta
+// delle proprietà è reattiva e persiste. Non serve il pattern computed get/set
+// che funzionerebbe solo sostituendo l'intero oggetto.
+const localFilters = props.filters
 
 const showAdvanced = computed({
   get: () => props.showAdvanced,
