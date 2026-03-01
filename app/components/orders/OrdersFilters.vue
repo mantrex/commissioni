@@ -27,22 +27,20 @@
           <!-- Giorni personalizzati (se custom) -->
           <div class="col-12 col-md-2" v-if="localFilters.expiredFilter === 'custom'">
             <q-input v-model.number="localFilters.customDays" outlined dense type="number" label="Giorni" min="0">
-              <template v-slot:append >
+              <template v-slot:append>
                 <span style="font-size:14px">gg</span>
               </template>
             </q-input>
           </div>
 
           <!-- Pulsanti azione -->
-          <div class="col-12 col-md-6 row q-gutter-sm justify-end ">
+          <div class="col-12 col-md-6 row q-gutter-sm justify-end">
             <q-btn color="primary" icon="search" label="Cerca" unelevated @click="emit('search')" />
-
             <q-btn flat color="secondary" :icon="showAdvanced ? 'expand_less' : 'expand_more'"
               :label="showAdvanced ? 'Meno filtri' : 'Altri filtri'"
               @click="emit('update:showAdvanced', !showAdvanced)" />
-
             <q-btn flat color="negative" icon="clear" @click="emit('reset')" />
-            <q-btn flat color="purple" icon="print"  unelevated @click="emit('print')" />
+            <q-btn flat color="purple" icon="print" unelevated @click="emit('print')" />
           </div>
         </div>
 
@@ -92,11 +90,23 @@
 
               <!-- Agente -->
               <div class="col-12 col-md-4">
-                <q-select v-model="localFilters.agentId" outlined dense :options="agentOptions" label="Agente"
-                  option-label="label" option-value="value" emit-value map-options clearable use-input
-                  @filter="filterAgents">
+                <q-select
+                  v-model="localFilters.agentId"
+                  outlined dense
+                  :options="agentOptions"
+                  label="Agente"
+                  option-label="label"
+                  option-value="value"
+                  emit-value map-options clearable use-input
+                  @filter="filterAgents"
+                >
                   <template v-slot:prepend>
                     <q-icon name="person" />
+                  </template>
+                  <template v-slot:no-option>
+                    <q-item>
+                      <q-item-section class="text-grey">Nessun agente trovato</q-item-section>
+                    </q-item>
                   </template>
                 </q-select>
               </div>
@@ -171,19 +181,12 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 const { statuses: allStatuses, loadStatuses } = useStatuses()
+
 const statusOptions = ref([])
-
+const allAgents = ref([])
 const agentOptions = ref([])
-
-const filterAgents = (val, update) => {
-  // Logica di filtro
-  update(() => {
-    // aggiorna agentOptions in base a val
-  })
-}
-
 
 // Props
 const props = defineProps({
@@ -199,11 +202,11 @@ const props = defineProps({
     type: Number,
     default: 0
   },
-   printing: { type: Boolean, default: false }
+  printing: { type: Boolean, default: false }
 })
 
 // Emits
-const emit = defineEmits(['update:filters', 'update:showAdvanced', 'search', 'reset','print'])
+const emit = defineEmits(['update:filters', 'update:showAdvanced', 'search', 'reset', 'print'])
 
 // Local state
 const localFilters = computed({
@@ -220,9 +223,10 @@ const showAdvanced = computed({
 const config = useRuntimeConfig()
 const defaultExpiredDays = config.public.expiredDays || 30
 
-// Options
+// ✅ Opzioni filtro scadenza — aggiunta "Aperte"
 const expiredOptions = [
   { label: `Scaduti (${defaultExpiredDays} giorni)`, value: 'expired' },
+  { label: 'Aperte', value: 'open' },
   { label: 'Tutti', value: 'all' },
   { label: 'Non scaduti', value: 'notExpired' },
   { label: 'Scaduti personalizzati', value: 'custom' }
@@ -234,16 +238,38 @@ const vipOptions = [
   { label: 'Solo non VIP', value: false }
 ]
 
+// ✅ Carica agenti
+const loadAgents = async () => {
+  try {
+    const data = await $fetch('/api/agents')
+    if (data?.agents) {
+      allAgents.value = data.agents
+      agentOptions.value = data.agents
+    }
+  } catch (err) {
+    console.error('Errore caricamento agenti:', err)
+  }
+}
 
+// ✅ Filtro agenti con ricerca
+const filterAgents = (val, update) => {
+  if (val === '') {
+    update(() => { agentOptions.value = allAgents.value })
+    return
+  }
+  update(() => {
+    const needle = val.toLowerCase()
+    agentOptions.value = allAgents.value.filter(a =>
+      a.label.toLowerCase().includes(needle)
+    )
+  })
+}
 
 const filterStatuses = (val, update) => {
   if (val === '') {
-    update(() => {
-      statusOptions.value = allStatuses.value
-    })
+    update(() => { statusOptions.value = allStatuses.value })
     return
   }
-
   update(() => {
     const needle = val.toLowerCase()
     statusOptions.value = allStatuses.value.filter(
@@ -252,10 +278,9 @@ const filterStatuses = (val, update) => {
   })
 }
 
-
 onMounted(async () => {
   await loadStatuses()
   statusOptions.value = allStatuses.value
+  await loadAgents()
 })
-
 </script>

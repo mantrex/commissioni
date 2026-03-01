@@ -160,7 +160,7 @@
 
               <!-- Riga note + totali + packing -->
               <tr class="notes-row">
-                <td colspan="2" class="notes-left">
+                <td colspan="3" class="notes-left">
                   <p v-if="invoice.notes">{{ invoice.notes }}</p>
                   <p class="made-in">MADE IN ITALY</p>
                   <p>M.f.r.: New Murano Gallery</p>
@@ -169,7 +169,7 @@
                   </p>
                   <p>CONTRIBUTO AMBIENTALE CONAI ASSOLTO</p>
                 </td>
-                <td colspan="3" class="totals-packing-cell">
+                <td colspan="2" class="totals-packing-cell">
                   <div class="totals-block">
                     <div class="total-line">
                       <span>Total</span>
@@ -185,34 +185,6 @@
                     </div>
                     <div class="total-line seao">
                       <span></span><span>S. E. &amp; O.</span>
-                    </div>
-                  </div>
-                  <div class="packing-inline" v-if="hasPacking">
-                    <div class="packing-boxes-row">
-                      <span
-                        >Total boxes:
-                        <strong>{{
-                          invoice.packing?.numPackages || totalPackages
-                        }}</strong></span
-                      >
-                      <span v-if="packingMeasures"
-                        >measures cm.
-                        <strong>{{ packingMeasures }}</strong></span
-                      >
-                    </div>
-                    <div class="packing-weights-row">
-                      <span
-                        >T.W. kg.
-                        <strong>{{
-                          invoice.packing?.grossWeight || ""
-                        }}</strong></span
-                      >
-                      <span
-                        >N.W. kg.
-                        <strong>{{
-                          invoice.packing?.netWeight || ""
-                        }}</strong></span
-                      >
                     </div>
                   </div>
                 </td>
@@ -403,12 +375,12 @@ $font-size-xs: 9px;
 // ── A4 wrapper ───────────────────────────────────
 .invoice-template {
   width: 210mm;
-  margin: 24px auto;
+  margin: 8px auto;
   background: $contrast;
-  box-shadow: 0 0 24px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 0 24px #0000002e;
   font-family: "Arial", sans-serif;
   font-size: $font-size-base;
-  color: #111;
+  color: $dark;
 }
 
 // Inner page: flex column a esattamente 1 A4
@@ -437,7 +409,7 @@ $font-size-xs: 9px;
   align-items: flex-start;
   margin-bottom: 8px;
   padding-bottom: 6px;
-  border-bottom: 2px solid $primary;
+  border-bottom: 1px solid $primary;
   flex-shrink: 0;
 
   .company-block {
@@ -460,7 +432,7 @@ $font-size-xs: 9px;
     .company-address p {
       margin: 1px 0;
       font-size: $font-size-xs;
-      line-height: 1.4;
+      line-height:0.9em;
       color: $altcontrast;
       text-align: justify;
       text-align-last: justify;

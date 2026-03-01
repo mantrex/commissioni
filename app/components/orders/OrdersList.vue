@@ -2,26 +2,64 @@
   <q-page class="orders-page">
     <!-- Sidebar con menu principale -->
     <div class="sidebar">
-      <q-btn class="menu-btn" color="primary" icon="add" label="Nuova" unelevated @click="handleNewOrder" />
+      <q-btn
+        class="menu-btn"
+        color="primary"
+        icon="add"
+        label="Nuova"
+        unelevated
+        @click="handleNewOrder" />
 
-      <q-btn class="menu-btn" color="secondary" icon="search" label="Ricerca" unelevated
+      <q-btn
+        class="menu-btn"
+        color="secondary"
+        icon="search"
+        label="Ricerca"
+        unelevated
         @click="toggleAdvancedFilters" />
 
-      <q-btn class="menu-btn" color="accent" icon="receipt" label="Fattura" unelevated @click="handleInvoice" />
+      <q-btn
+        class="menu-btn"
+        color="accent"
+        icon="receipt"
+        label="Fattura"
+        unelevated
+        @click="handleInvoice" />
 
-      <q-btn class="menu-btn" color="secondary" icon="list_alt" label="Liste" unelevated @click="router.push('/lists')" />
+      <q-btn
+        class="menu-btn"
+        color="secondary"
+        icon="list_alt"
+        label="Liste"
+        unelevated
+        @click="router.push('/lists')" />
 
-      <q-btn class="menu-btn" color="info" icon="logout" label="Esci" unelevated @click="handleExit" />
+      <q-btn
+        class="menu-btn"
+        color="info"
+        icon="logout"
+        label="Esci"
+        unelevated
+        @click="handleExit" />
     </div>
 
     <!-- Contenuto principale -->
     <div class="main-content">
       <!-- Filtri -->
-      <OrdersFilters v-model:filters="filters" v-model:show-advanced="showAdvancedFilters" :total-orders="totalOrders"
-        @search="handleSearch" @reset="handleReset"   @print="handlePrint" />
+      <OrdersFilters
+        v-model:filters="filters"
+        v-model:show-advanced="showAdvancedFilters"
+        :total-orders="totalOrders"
+        @search="handleSearch"
+        @reset="handleReset"
+        @print="handlePrint" />
 
       <!-- Tabella ordini -->
-      <OrdersTable v-model:pagination="pagination" :orders="orders" :loading="loading" @request="onRequest"
+      <OrdersTable
+        v-model:pagination="pagination"
+        :orders="orders"
+        :loading="loading"
+        @request="onRequest"
         @row-click="handleRowClick" />
     </div>
 
@@ -33,186 +71,152 @@
       :component-name="NewOrderDialog"
       :component-props="{}"
       :custom-style="'width: 440px'"
-      @close="handleNewOrderDialogClose"
-    />
+      @close="handleNewOrderDialogClose" />
   </q-page>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useQuasar } from 'quasar'
-import OrdersFilters from './OrdersFilters.vue'
-import OrdersTable from './OrdersTable.vue'
-import ComponentDialog from '~/components/common/ComponentDialog.vue'
-import NewOrderDialog from './NewOrderDialog.vue'
+import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { useQuasar } from "quasar";
+import OrdersFilters from "./OrdersFilters.vue";
+import OrdersTable from "./OrdersTable.vue";
+import ComponentDialog from "~/components/common/ComponentDialog.vue";
+import NewOrderDialog from "./NewOrderDialog.vue";
 
-const { printing, printOrders } = useOrderPrint()
-const authStore = useAuthStore()
-const router = useRouter()
-const $q = useQuasar()
+const { printing, printOrders } = useOrderPrint();
+const authStore = useAuthStore();
+const router = useRouter();
+const $q = useQuasar();
 
-const loading = ref(false)
-const orders = ref([])
-const totalOrders = ref(0)
-const showAdvancedFilters = ref(false)
+const loading = ref(false);
+const orders = ref([]);
+const totalOrders = ref(0);
 
-const config = useRuntimeConfig()
-const defaultExpiredDays = config.public.expiredDays || 30
+const config = useRuntimeConfig();
+const defaultExpiredDays = config.public.expiredDays || 30;
 
-const filters = reactive({
-  commNum: '',
-  expiredFilter: 'expired',
-  customDays: defaultExpiredDays,
-  clientLastname: '',
-  clientFirstname: '',
-  clientCity: '',
-  clientCountry: '',
-  clientVip: null,
-  agentId: null,
-  productCode: '',
-  status: null,
-  dateFrom: null,
-  dateTo: null,
-  dueDateFrom: null,
-  dueDateTo: null
-})
-
-const pagination = ref({
-  sortBy: 'dueDate',
-  descending: false,
-  page: 1,
-  rowsPerPage: 25,
-  rowsNumber: 0
-})
+// ✅ Stato persistente tra navigazioni tramite useState di Nuxt
+const { filters, pagination, showAdvancedFilters, resetFilters: resetFiltersState } = useOrdersState();
 
 const loadOrders = async () => {
-  loading.value = true
+  loading.value = true;
 
   try {
     const params = new URLSearchParams({
       page: pagination.value.page,
       limit: pagination.value.rowsPerPage,
       sortBy: pagination.value.sortBy,
-      sortDesc: pagination.value.descending ? 'true' : 'false'
-    })
+      sortDesc: pagination.value.descending ? "true" : "false",
+    });
 
-    if (filters.commNum) params.append('commNum', filters.commNum)
-    if (filters.expiredFilter === 'expired') {
-      params.append('expiredDays', defaultExpiredDays)
-    } else if (filters.expiredFilter === 'custom') {
-      params.append('expiredDays', filters.customDays)
-    } else if (filters.expiredFilter === 'notExpired') {
-      params.append('notExpired', 'true')
+    if (filters.value.commNum) params.append("commNum", filters.value.commNum);
+    if (filters.value.expiredFilter === "expired") {
+      params.append("expiredDays", defaultExpiredDays);
+    } else if (filters.value.expiredFilter === "custom") {
+      params.append("expiredDays", filters.value.customDays);
+    } else if (filters.value.expiredFilter === "notExpired") {
+      params.append("notExpired", "true");
+    } else if (filters.value.expiredFilter === "open") {
+      // ✅ Filtro "Aperte": filtra per status APERTA
+      params.append("status", "APERTA");
     }
 
-    if (filters.clientLastname) params.append('clientLastname', filters.clientLastname)
-    if (filters.clientFirstname) params.append('clientFirstname', filters.clientFirstname)
-    if (filters.clientCity) params.append('clientCity', filters.clientCity)
-    if (filters.clientCountry) params.append('clientCountry', filters.clientCountry)
-    if (filters.clientVip !== null) params.append('clientVip', filters.clientVip)
-    if (filters.agentId) params.append('agentId', filters.agentId)
-    if (filters.productCode) params.append('productCode', filters.productCode)
-    if (filters.status) params.append('status', filters.status)
-    if (filters.dateFrom) params.append('dateFrom', filters.dateFrom)
-    if (filters.dateTo) params.append('dateTo', filters.dateTo)
-    if (filters.dueDateFrom) params.append('dueDateFrom', filters.dueDateFrom)
-    if (filters.dueDateTo) params.append('dueDateTo', filters.dueDateTo)
+    if (filters.value.clientLastname)
+      params.append("clientLastname", filters.value.clientLastname);
+    if (filters.value.clientFirstname)
+      params.append("clientFirstname", filters.value.clientFirstname);
+    if (filters.value.clientCity) params.append("clientCity", filters.value.clientCity);
+    if (filters.value.clientCountry)
+      params.append("clientCountry", filters.value.clientCountry);
+    if (filters.value.clientVip !== null)
+      params.append("clientVip", filters.value.clientVip);
+    if (filters.value.agentId) params.append("agentId", filters.value.agentId);
+    if (filters.value.productCode) params.append("productCode", filters.value.productCode);
+    // Evita conflitto: se expiredFilter === 'open' lo status è già aggiunto sopra
+    if (filters.value.status && filters.value.expiredFilter !== "open")
+      params.append("status", filters.value.status);
+    if (filters.value.dateFrom) params.append("dateFrom", filters.value.dateFrom);
+    if (filters.value.dateTo) params.append("dateTo", filters.value.dateTo);
+    if (filters.value.dueDateFrom) params.append("dueDateFrom", filters.value.dueDateFrom);
+    if (filters.value.dueDateTo) params.append("dueDateTo", filters.value.dueDateTo);
 
-    const data  = await $fetch(`/api/orders?${params.toString()}`)
+    const data = await $fetch(`/api/orders?${params.toString()}`);
 
- 
+    if (!data) return;
 
-    if (!data) return
-
-    orders.value = data.orders || []
-    totalOrders.value = data.total || 0
-    pagination.value.rowsNumber = totalOrders.value
-
+    orders.value = data.orders || [];
+    totalOrders.value = data.total || 0;
+    pagination.value.rowsNumber = totalOrders.value;
   } catch (err) {
     $q.notify({
-      type: 'negative',
-      message: 'Errore nel caricamento degli ordini',
-      caption: err.message
-    })
+      type: "negative",
+      message: "Errore nel caricamento degli ordini",
+      caption: err.message,
+    });
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const onRequest = (props) => {
-  const { page, rowsPerPage, sortBy, descending } = props.pagination
-  pagination.value.page = page
-  pagination.value.rowsPerPage = rowsPerPage
-  pagination.value.sortBy = sortBy
-  pagination.value.descending = descending
-  loadOrders()
-}
+  const { page, rowsPerPage, sortBy, descending } = props.pagination;
+  pagination.value.page = page;
+  pagination.value.rowsPerPage = rowsPerPage;
+  pagination.value.sortBy = sortBy;
+  pagination.value.descending = descending;
+  loadOrders();
+};
 
 const handleSearch = () => {
-  pagination.value.page = 1
-  loadOrders()
-}
+  pagination.value.page = 1;
+  loadOrders();
+};
 
 const handleReset = () => {
-  filters.commNum = ''
-  filters.expiredFilter = 'expired'
-  filters.customDays = defaultExpiredDays
-  filters.clientLastname = ''
-  filters.clientFirstname = ''
-  filters.clientCity = ''
-  filters.clientCountry = ''
-  filters.clientVip = null
-  filters.agentId = null
-  filters.productCode = ''
-  filters.status = null
-  filters.dateFrom = null
-  filters.dateTo = null
-  filters.dueDateFrom = null
-  filters.dueDateTo = null
-  pagination.value.page = 1
-  loadOrders()
-}
+  resetFiltersState();
+  loadOrders();
+};
 
 const toggleAdvancedFilters = () => {
-  showAdvancedFilters.value = !showAdvancedFilters.value
-}
+  showAdvancedFilters.value = !showAdvancedFilters.value;
+};
 
 const handleRowClick = (row) => {
-  router.push(`/orders/${row._id}`)
-}
+  router.push(`/orders/${row._id}`);
+};
 
 const handleInvoice = () => {
-  router.push('/invoices')
-}
+  router.push("/invoices");
+};
 
 const handleExit = () => {
-  authStore.logout()
-}
+  authStore.logout();
+};
 
 const handlePrint = () => {
-  printOrders(filters, defaultExpiredDays)
-}
+  printOrders(filters.value, defaultExpiredDays);
+};
 
 // =============================================
 // Dialog: nuova commissione
 // =============================================
-const newOrderDialogShow = ref(false)
+const newOrderDialogShow = ref(false);
 
 const handleNewOrder = () => {
-  newOrderDialogShow.value = true
-}
+  newOrderDialogShow.value = true;
+};
 
 const handleNewOrderDialogClose = (commNum) => {
   // commNum è null se l'utente ha annullato, altrimenti è il numero scelto
   if (commNum) {
-    router.push(`/orders/new?commNum=${encodeURIComponent(commNum)}`)
+    router.push(`/orders/new?commNum=${encodeURIComponent(commNum)}`);
   }
-}
+};
 
 onMounted(() => {
-  loadOrders()
-})
+  loadOrders();
+});
 </script>
 
 <style scoped lang="scss">

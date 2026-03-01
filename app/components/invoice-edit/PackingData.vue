@@ -5,6 +5,7 @@
       <span>Imballo e Pacchi</span>
     </q-card-section>
     <q-card-section class="compact-section">
+      <!--
       <div class="compact-grid">
         <q-input v-model="packing.made" label="Made" outlined dense />
         <q-input v-model="packing.whoMakes" label="Chi Fa" outlined dense />
@@ -13,7 +14,7 @@
         <q-input v-model.number="packing.grossWeight" label="P.Lordo" type="number" outlined dense step="0.01" />
         <q-input v-model.number="packing.netWeight" label="P.Netto" type="number" outlined dense step="0.01" />
         <q-input v-model="packing.conai" label="Conai" outlined dense class="span-2" />
-      </div>
+      </div>-->
 
       <!-- Lista Pacchi -->
       <div class="packages-list q-mt-sm" v-if="packages.length > 0">
@@ -142,7 +143,7 @@ const handleDialogClose = (result) => {
 }
 
 .packages-list {
-  border-top: 1px solid $border;
+
   padding-top: 8px;
 
   .packages-header {
