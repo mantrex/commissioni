@@ -245,6 +245,7 @@
                 <span v-if="!invoice.hasVat"
                   >Art. 8 lett. a) DPR 633/72 - Operazione non imponibile</span
                 >
+                <span v-else>IVA {{getConfig("IVA").value}}%</span>
               </td>
               <td class="grand-total">
                 {{ formatCurrency(invoice.total) }}
@@ -263,7 +264,7 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
-
+import { getConfig } from "~~/shared/config.js"
 const route = useRoute();
 const router = useRouter();
 const invoice = ref(null);

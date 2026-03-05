@@ -56,10 +56,20 @@
               @click.stop="handleInvoice"
               class="action-btn invoice-btn">
               <span class="btn-label">Fattura</span>
-              <q-tooltip class="bg-accent"
+              <q-tooltip class="bg-secondary"
                 >Gestisci fatture di questa commissione</q-tooltip
               >
             </q-btn>
+            <q-btn
+              flat
+              dense
+              icon="print"
+              @click.stop="handlePrint"
+              class="action-btn print-btn">
+              <span class="btn-label">Stampa</span>
+              <q-tooltip class="bg-accent">Stampa commissione</q-tooltip>
+            </q-btn>
+
             <q-btn
               v-if="!isNew"
               flat
@@ -265,7 +275,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from "vue";
+import { ref, reactive, computed, onMounted, onUnmounted, nextTick, onBeforeUmount } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useQuasar } from "quasar";
 import ComponentDialog from "~/components/common/ComponentDialog.vue";
@@ -347,6 +357,7 @@ const dialogs = reactive({
 const canCreateInvoice = computed(() =>
   orderData.items?.some((item) => item.invoiced && item.invoiced > 0),
 );
+
 
 const getClientName = (client) => {
   if (!client) return "";
@@ -753,6 +764,15 @@ const stopAutosave = () => {
   }
 };
 
+const handlePrint = () => {
+   router.push(`/orders/print/${orderId.value}`)
+}
+
+const removeGuard = router.beforeEach((to) => {
+  // Ferma sempre l'autosave quando si naviga via da questa pagina
+  stopAutosave()
+})
+
 onMounted(async () => {
   await loadOrder();
   await loadStatuses();
@@ -761,6 +781,11 @@ onMounted(async () => {
   await nextTick();
   quickNavRef.value?.focus();
 });
+
+onBeforeUnmount(() => {
+  stopAutosave()
+  removeGuard() // rimuove il guard per non lasciarlo attivo globalmente
+})
 
 onUnmounted(() => {
   stopAutosave();
@@ -871,7 +896,7 @@ onUnmounted(() => {
     }
 
     .invoice-btn {
-      color: $accent;
+      color: $secondary;
     }
     .delete-btn {
       color: $negative;
@@ -980,6 +1005,9 @@ onUnmounted(() => {
   .header-spacer {
     height: 48px;
   }
+}
+.print-btn {
+  color: $accent;
 }
 
 @media (max-width: 600px) {

@@ -31,7 +31,7 @@ export default defineEventHandler(async (event) => {
       commNum,
       date: body.orderData?.date || new Date(),
       dueDate: body.orderData?.dueDate || null,
-      clientId: body.client._id || null,
+      clientId: body.client?._id || null,
       agentId: body.orderData?.agentId || null,
       status: body.orderData?.status || "APERTA",
       shipments: (body.shipments || []).filter((s) => s.date || s.courier),

@@ -124,7 +124,7 @@ const loadOrders = async () => {
       params.append("notExpired", "true");
     } else if (filters.value.expiredFilter === "open") {
       // ✅ Filtro "Aperte": filtra per status APERTA
-      params.append("bakanceOpen", "true"); // saldo != 0
+      params.append("balanceOpen", "true"); // saldo != 0
     } else if (filters.value.expiredFilter === "closed") {
       params.append("balanceClosed", "true"); // saldo == 0
     }

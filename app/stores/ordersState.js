@@ -27,7 +27,7 @@ export const useOrdersStateStore = defineStore("ordersState", {
       rowsPerPage: 25,
       rowsNumber: 0,
     },
-    showAdvancedFilters: false,
+    showAdvancedFilters: true,
   }),
 
   actions: {

@@ -16,6 +16,12 @@ body {
   height: 100vh;
 }
 
+.bg-body {
+  background:$body!important;
+}
+.text-body {
+  color:$body;
+}
 .bg-primary{
   background:$primary!important;
 }
@@ -31,6 +37,19 @@ body {
   color: $accent !important;
 }
 
+.text-readonly {
+  color: $readonly;
+}
+.bg-readonly {
+  background: $readonly;
+}
+
+.text-important {
+  color: $important;
+}
+.bg-important {
+  background: $important;
+}
 @media print {
   .no-print {
     display: none !important;

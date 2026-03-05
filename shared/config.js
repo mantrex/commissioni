@@ -33,6 +33,16 @@ export const APP_CONFIG = [
     value: "{TYPE}00{VALUE}/{YEAR}",
     active: true,
   },
+  {
+    code:"IVA",
+    value:22,
+    active:true
+  },
+  {
+    code:"DEADLINE",
+    value:30,
+    active:true,
+  }
 ];
 
 /**

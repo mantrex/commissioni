@@ -65,7 +65,7 @@
           </div>
 
           <!-- Colonna 3: Dati Finanziari -->
-          <div class="column-wrapper">
+          <div class="column-wrapper financial-data-wrapper">
             <div class="column-header">
               <div class="header-left">
                 <q-icon name="euro" size="18px" />
@@ -74,14 +74,15 @@
             </div>
 
             <div class="financial-data">
-              <q-input v-model.number="financial.ca" label="C/A" type="number" outlined dense class="financial-input" />
-              <q-input v-model.number="financial.rd" label="RD" type="number" outlined dense class="financial-input" />
+              <q-input v-model.number="financial.ca" label="C/A" type="number" outlined dense class="financial-input bg-body" />
+              <q-input v-model.number="financial.rd" label="RD" type="number" outlined dense class="financial-input bg-body" />
               <q-input v-model.number="financial.ric" label="Ric." type="number" outlined dense
-                class="financial-input" />
+                class="financial-input bg-body" />
               <q-input v-model.number="financial.balance" label="Saldo" type="number" outlined dense
-                class="financial-input" />
+                class="financial-input financial-input--readonly" readonly />
+                <div class="financial-data-separator" ></div>
               <q-input v-model.number="financial.pay" label="Pag." type="number" outlined dense
-                class="financial-input" />
+                class="financial-input bg-body" />
             </div>
           </div>
         </div>
@@ -91,7 +92,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useQuasar } from 'quasar'
 
 // ✅ USA defineModel per tutti e tre i modelli
@@ -166,6 +167,14 @@ const removeNote = (index) => {
     notes.value.splice(index, 1)
   })
 }
+
+watch(
+  () => [financial.value.ca, financial.value.rd, financial.value.ric],
+  ([ca, rd, ric]) => {
+    financial.value.balance = (ric || 0) - ((ca || 0) + (rd || 0))
+  },{immediate:true}
+)
+
 </script>
 
 <style scoped lang="scss">
@@ -199,7 +208,7 @@ const removeNote = (index) => {
 
 .three-columns {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: (1fr 2fr 180px);
   gap: 16px;
 
   @media (max-width: 1200px) {
@@ -278,11 +287,29 @@ const removeNote = (index) => {
     min-height: 50px;
   }
 }
+.financial-data-wrapper {
+  border:1px solid $border;
+  padding:8px;
+  border-radius:4px;
+  background:$bg-light2;
+  width:auto;
+  align-self:start;
+}
 
 .financial-data {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.financial-input--readonly {
+  :deep(.q-field__control) {
+    background: $readonly;
+    color: $text-secondary;
+  }
+}
+.financial-data-separator {
+  border-bottom:1px solid $border;
 }
 
 @media (max-width: 768px) {
