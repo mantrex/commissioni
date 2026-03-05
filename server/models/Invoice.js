@@ -8,17 +8,6 @@ const clientSnapshotSchema = new mongoose.Schema(
       ref: "Client",
       // null se fattura standalone
     },
-    invoiceType: {
-      type: String,
-      enum: ["E", "N"],
-      default: "E",
-    },
-    invoiceNumber: {
-      type: Number, 
-    },
-    invoiceYear: {
-      type: Number, 
-    },
     firstname: String,
     lastname: String,
     title: String,
@@ -121,6 +110,18 @@ const invoiceSchema = new mongoose.Schema(
       unique: true,
       trim: true,
     },
+    invoiceType: {
+      type: String,
+      enum: ["E", "N"],
+      default: "E",
+    },
+    invoiceNumber: {
+      type: Number,
+    },
+    invoiceYear: {
+      type: Number,
+    },
+
     invoiceDate: {
       type: Date,
     },
@@ -163,6 +164,7 @@ const invoiceSchema = new mongoose.Schema(
     packing: packingSchema,
     packages: [packageSchema],
     shippingLabel: shippingLabelSchema,
+    deletedAt: { type: Date, default: null },
   },
   {
     timestamps: true,
@@ -175,5 +177,7 @@ invoiceSchema.index({ commNum: 1 });
 invoiceSchema.index({ "client.clientId": 1 });
 invoiceSchema.index({ invoiceDate: -1 });
 invoiceSchema.index({ issued: 1 });
+invoiceSchema.index({ invoiceType: 1, invoiceYear: 1, invoiceNumber: 1 });
+invoiceSchema.index({ deletedAt: 1 });
 
 export default mongoose.model("Invoice", invoiceSchema);

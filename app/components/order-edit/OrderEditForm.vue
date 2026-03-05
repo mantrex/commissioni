@@ -275,7 +275,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted, nextTick, onBeforeUmount } from "vue";
+import { ref, reactive, computed, onMounted, onUnmounted, nextTick, onBeforeUnmount } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useQuasar } from "quasar";
 import ComponentDialog from "~/components/common/ComponentDialog.vue";
@@ -494,7 +494,8 @@ const handleNavNext = async (nextOrder) => {
 };
 
 // ─── Nuova commissione ───
-const handleNewOrder = () => {
+const handleNewOrder = async () => {
+  await handleSave(true)
   dialogs.newOrder.show = true;
 };
 
@@ -541,7 +542,8 @@ const handleCancelConfirm = (confirmed) => {
 };
 
 // ─── Fattura ───
-const handleInvoice = () => {
+const handleInvoice = async () => {
+    await handleSave(true)
   dialogs.invoices.show = true;
 };
 
@@ -743,6 +745,7 @@ const handleDeleteConfirm = async (confirmed) => {
 // ─── Autosave ───
 const startAutosave = () => {
   if (!autosaveEnabled) return;
+  stopAutosave();
   autosaveTimer = setInterval(async () => {
     const anyDialogOpen = Object.values(dialogs).some((d) => d.show);
     if (saving.value || !orderData.commNum || anyDialogOpen) return;
@@ -764,7 +767,8 @@ const stopAutosave = () => {
   }
 };
 
-const handlePrint = () => {
+const handlePrint = async () => {
+    await handleSave(true)
    router.push(`/orders/print/${orderId.value}`)
 }
 

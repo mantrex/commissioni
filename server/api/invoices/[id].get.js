@@ -16,7 +16,7 @@ export default defineEventHandler(async (event) => {
 
     console.log('📄 Caricamento fattura:', id)
 
-    const invoice = await Invoice.findById(id)
+    const invoice = await Invoice.findOne({_id:id,deletedAt:null})
       .populate('orderId', 'commNum')
       .populate('items.productId', 'code name details')
       .lean()

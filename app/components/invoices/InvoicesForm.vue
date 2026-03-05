@@ -4,7 +4,7 @@
     <div class="invoice-header-sticky">
       <div class="header-content">
         <div class="header-left">
-                    <q-btn
+          <q-btn
             flat
             dense
             round
@@ -20,7 +20,16 @@
             <span>Fatt. Proforma {{ invoiceData.invoiceId }}</span>
           </div>
           <span class="invoice-info">
-            <span v-if="(invoiceData.company || invoiceData.firstname || invoiceData.lastname) && displayCommNum" class="separator"> di </span>
+            <span
+              v-if="
+                (invoiceData.company ||
+                  invoiceData.firstname ||
+                  invoiceData.lastname) &&
+                displayCommNum
+              "
+              class="separator">
+              di
+            </span>
             <span v-if="displayCommNum" class="comm-ref"
               >Comm. {{ displayCommNum }}</span
             >
@@ -35,16 +44,23 @@
             @click="handlePrint"
             :disable="isNew"
             class="action-btn print-btn">
-            <q-tooltip v-if="isNew"
-              >Salva prima la fattura per stamparla</q-tooltip
+            <q-tooltip class="bg-accent"
+              >Stampa la fattura</q-tooltip
             >
           </q-btn>
           <q-btn
+           
             flat
             dense
-            label="Annulla"
-            @click="handleCancel"
-            class="action-btn cancel-btn" />
+            icon="delete_forever"
+            label="Elimina"
+            @click="dialogs.delete.show = true"
+            class="action-btn delete-btn">
+            <q-tooltip class="bg-negative"
+              >Elimina la fattura</q-tooltip
+            >
+          </q-btn>
+
           <q-btn
             flat
             dense
@@ -52,7 +68,9 @@
             icon="save"
             @click="handleSave"
             :loading="saving"
-            class="action-btn save-btn" />
+            class="action-btn save-btn" >
+          <q-tooltip class="bg-primary">Salva la fattura</q-tooltip></q-btn>
+
         </div>
       </div>
     </div>
@@ -101,7 +119,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted} from "vue";
+import { ref, reactive, computed, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import { useQuasar } from "quasar";
 import ClientData from "~/components/invoice-edit/ClientData.vue";
@@ -218,15 +236,11 @@ const loadInvoice = async () => {
   if (isNew.value && !props.commNum) return;
   try {
     if (!isNew.value && props.invoiceId) {
-      const data = await $fetch(
-        `/api/invoices/${props.invoiceId}`,
-      );
+      const data = await $fetch(`/api/invoices/${props.invoiceId}`);
       populateInvoiceData(data.invoice);
     } else if (props.commNum) {
-      const data = await $fetch(
-        `/api/orders/by-commnum/${props.commNum}`,
-      );
-   
+      const data = await $fetch(`/api/orders/by-commnum/${props.commNum}`);
+
       populateFromOrder(data.order);
     }
   } catch (err) {
@@ -365,13 +379,10 @@ const handleSave = async () => {
         router.replace(`/invoices/edit?id=${data?.invoice._id}`);
       }
     } else {
-      const data = await $fetch(
-        `/api/invoices/${props.invoiceId}`,
-        {
-          method: "PUT",
-          body: payload,
-        },
-      );
+      const data = await $fetch(`/api/invoices/${props.invoiceId}`, {
+        method: "PUT",
+        body: payload,
+      });
       $q.notify({ type: "positive", message: "Fattura salvata" });
 
       if (data?.invoice) {
@@ -389,12 +400,12 @@ const handleSave = async () => {
   }
 };
 
-
 const handleAutoSave = async () => {
-  if (!autosaveEnabled) return
+  if (!autosaveEnabled) return;
   // Funziona sia per nuove (ha invoiceId preset) che per esistenti
-  const idToSave = props.invoiceId || (isNew.value ? invoiceData.invoiceId : null)
-  if (!idToSave || saving.value) return
+  const idToSave =
+    props.invoiceId || (isNew.value ? invoiceData.invoiceId : null);
+  if (!idToSave || saving.value) return;
 
   try {
     const payload = {
@@ -410,35 +421,50 @@ const handleAutoSave = async () => {
       packing: invoiceData.packing,
       packages: invoiceData.packages,
       shippingLabel: invoiceData.shippingLabel,
-    }
+    };
 
     if (isNew.value) {
       // Fattura nuova: POST (crea se non esiste ancora)
-      const data = await $fetch("/api/invoices", { method: "POST", body: payload })
+      const data = await $fetch("/api/invoices", {
+        method: "POST",
+        body: payload,
+      });
       if (data?.invoice?._id) {
-        invoiceData.invoiceId = data.invoice.invoiceId
-        router.replace(`/invoices/edit?id=${data.invoice._id}`)
+        invoiceData.invoiceId = data.invoice.invoiceId;
+        router.replace(`/invoices/edit?id=${data.invoice._id}`);
       }
     } else {
-      await $fetch(`/api/invoices/${props.invoiceId}`, { method: "PUT", body: payload })
+      await $fetch(`/api/invoices/${props.invoiceId}`, {
+        method: "PUT",
+        body: payload,
+      });
     }
 
-    $q.notify({ message: "", icon: "sync", color: "grey-7", position: "bottom-left", timeout: 1500 })
+    $q.notify({
+      message: "",
+      icon: "sync",
+      color: "grey-7",
+      position: "bottom-left",
+      timeout: 1500,
+    });
   } catch (err) {
-    console.error("❌ Errore auto-save fattura:", err)
+    console.error("❌ Errore auto-save fattura:", err);
   }
-}
+};
 
 const startAutosave = () => {
-  if (!autosaveEnabled) return
+  if (!autosaveEnabled) return;
   autosaveTimer = setInterval(() => {
-    if (!saving.value) handleAutoSave()
-  }, autosaveSeconds * 1000)
-}
+    if (!saving.value) handleAutoSave();
+  }, autosaveSeconds * 1000);
+};
 
 const stopAutosave = () => {
-  if (autosaveTimer) { clearInterval(autosaveTimer); autosaveTimer = null }
-}
+  if (autosaveTimer) {
+    clearInterval(autosaveTimer);
+    autosaveTimer = null;
+  }
+};
 
 onMounted(async () => {
   await loadInvoice();
@@ -448,7 +474,6 @@ onMounted(async () => {
 onUnmounted(() => {
   stopAutosave();
 });
-
 </script>
 
 <style scoped lang="scss">
@@ -539,13 +564,10 @@ onUnmounted(() => {
       .save-btn {
         color: $primary;
 
-        &:hover {
-          background: color.adjust($primary, $lightness: -10%);
-        }
+   
       }
 
-      .cancel-btn {
-        // ✅ AGGIUNGI QUESTA CLASSE
+      .delete-btn {
         color: $negative;
 
         &:hover {

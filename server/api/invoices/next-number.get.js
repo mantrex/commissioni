@@ -6,7 +6,7 @@ export default defineEventHandler(async (event) => {
   const year = parseInt(query.year) || new Date().getFullYear();
 
   const last = await Invoice.findOne(
-    { invoiceType: type, invoiceYear: year },
+    { invoiceType: type, invoiceYear: year,deletedAt:null },
     { invoiceNumber: 1 },
     { sort: { invoiceNumber: -1 } },
   );

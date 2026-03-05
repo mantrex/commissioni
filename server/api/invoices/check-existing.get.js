@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
     }
 
     // Tutte le fatture per questo commNum (possono essere più di una)
-    const invoices = await Invoice.find({ commNum })
+    const invoices = await Invoice.find({ commNum,deletedAt:null })
       .select(
         "_id invoiceId invoiceNumber invoiceYear invoiceType invoiceDate total issued",
       )

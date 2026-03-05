@@ -12,7 +12,6 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-
     // Genera ID fattura se non presente
     let invoiceId = body.invoiceId || body.invoiceData?.invoiceId;
     if (!invoiceId) {
@@ -69,6 +68,36 @@ export default defineEventHandler(async (event) => {
       packages: body.packages || [],
       shippingLabel: body.shippingLabel || {},
     };
+
+    // ✅ Controllo unicità: invoiceNumber + invoiceType + invoiceYear non devono già esistere
+    const duplicate = await Invoice.findOne({
+      invoiceType: invoiceData.invoiceType,
+      invoiceNumber: invoiceData.invoiceNumber,
+      invoiceYear: invoiceData.invoiceYear,
+      deletedAt: null,
+    }).lean();
+
+    if (duplicate) {
+      // Ricalcola il prossimo numero disponibile
+      const last = await Invoice.findOne(
+        {
+          invoiceType: invoiceData.invoiceType,
+          invoiceYear: invoiceData.invoiceYear,
+        },
+        { invoiceNumber: 1 },
+        { sort: { invoiceNumber: -1 } },
+      ).lean();
+
+      const nextNumber = (last?.invoiceNumber || 0) + 1;
+      invoiceData.invoiceNumber = nextNumber;
+      invoiceData.invoiceId = `${invoiceData.invoiceType}${String(
+        nextNumber,
+      ).padStart(3, "0")}/${invoiceData.invoiceYear}`;
+
+      console.warn(
+        `⚠️ Duplicato rilevato, riassegnato a ${invoiceData.invoiceId}`,
+      );
+    }
 
     const invoice = await Invoice.create(invoiceData);
 

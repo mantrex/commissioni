@@ -7,7 +7,7 @@ export default defineEventHandler(async (event) => {
   const orderId = getRouterParam(event, 'id')
 
   try {
-    const order = await Order.findById(orderId)
+    const order = await Order.findOne({_id:orderId,deletedAt:null})
       .populate('clientId', 'firstname lastname company address cap city region state tel fax email piva vip')
       .populate('agentId', 'firstname lastname')
       .populate('items.productId', 'code name details invoiced')

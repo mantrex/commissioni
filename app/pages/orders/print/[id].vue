@@ -14,7 +14,7 @@
         icon="print"
         label="Stampa"
         unelevated
-        @click="window.print()" />
+        @click="handlePrint" />
     </div>
 
     <div v-if="loading" class="flex flex-center q-pa-xl">
@@ -205,6 +205,8 @@ const orderId = route.params.id;
 
 const order = ref(null);
 const loading = ref(true);
+
+const handlePrint = () => window.print()
 
 const formatDate = (d) => {
   if (!d) return "";
@@ -577,7 +579,7 @@ onMounted(async () => {
   }
 
   @page {
-    size: A4 landscape;
+    size: A4 portrait;
     margin: 10mm;
   }
 }
