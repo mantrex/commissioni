@@ -225,7 +225,8 @@ const defaultExpiredDays = config.public.expiredDays || 30
 // ✅ Opzioni filtro scadenza — aggiunta "Aperte"
 const expiredOptions = [
   { label: `Scaduti (${defaultExpiredDays} giorni)`, value: 'expired' },
-  { label: 'Aperte', value: 'open' },
+  { label: 'Aperte (saldo != 0)', value: 'open' },
+  { label: 'Chiuse (saldo = 0)', value: 'closed' },
   { label: 'Tutti', value: 'all' },
   { label: 'Non scaduti', value: 'notExpired' },
   { label: 'Scaduti personalizzati', value: 'custom' }

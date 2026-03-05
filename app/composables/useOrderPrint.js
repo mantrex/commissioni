@@ -20,6 +20,7 @@ export const useOrderPrint = () => {
     { field: "balance", label: "Saldo", width: 7 },
     { field: "shipDate", label: "Data Sped.", width: 6 },
     { field: "courier", label: "Corriere", width: 8 },
+    { field: "firstNote", label: "Prima nota", width: 12 },
   ];
 
   const fmtDate = (d) => (d ? new Date(d).toLocaleDateString("it-IT") : "");

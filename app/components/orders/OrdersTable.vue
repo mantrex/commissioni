@@ -255,13 +255,20 @@ const columns = [
     align: 'right',
     field: 'ric',
     sortable: true
+  },
+  {
+    name: 'balance',
+    label: 'SALDO',
+    align: 'right',
+    field: 'balance',
+    sortable: true
   }
 ]
 
 // Colonne visibili (esclude quelle non necessarie)
 const visibleColumns = computed(() => [
   'commNum', 'date', 'agent', 'vip', 'clientLastname', 'clientFirstname',
-  'country', 'city', 'dueDate', 'hasInvoice', 'status', 'ca', 'rd', 'ric', 
+  'country', 'city', 'dueDate', 'hasInvoice', 'status', 'ca', 'rd', 'ric', 'balance'
 ])
 
 // Utility functions

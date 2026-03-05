@@ -97,7 +97,12 @@ const config = useRuntimeConfig();
 const defaultExpiredDays = config.public.expiredDays || 30;
 
 // ✅ Stato persistente tra navigazioni tramite useState di Nuxt
-const { filters, pagination, showAdvancedFilters, resetFilters: resetFiltersState } = useOrdersState();
+const {
+  filters,
+  pagination,
+  showAdvancedFilters,
+  resetFilters: resetFiltersState,
+} = useOrdersState();
 
 const loadOrders = async () => {
   loading.value = true;
@@ -119,27 +124,34 @@ const loadOrders = async () => {
       params.append("notExpired", "true");
     } else if (filters.value.expiredFilter === "open") {
       // ✅ Filtro "Aperte": filtra per status APERTA
-      params.append("status", "APERTA");
+      params.append("bakanceOpen", "true"); // saldo != 0
+    } else if (filters.value.expiredFilter === "closed") {
+      params.append("balanceClosed", "true"); // saldo == 0
     }
 
     if (filters.value.clientLastname)
       params.append("clientLastname", filters.value.clientLastname);
     if (filters.value.clientFirstname)
       params.append("clientFirstname", filters.value.clientFirstname);
-    if (filters.value.clientCity) params.append("clientCity", filters.value.clientCity);
+    if (filters.value.clientCity)
+      params.append("clientCity", filters.value.clientCity);
     if (filters.value.clientCountry)
       params.append("clientCountry", filters.value.clientCountry);
     if (filters.value.clientVip !== null)
       params.append("clientVip", filters.value.clientVip);
     if (filters.value.agentId) params.append("agentId", filters.value.agentId);
-    if (filters.value.productCode) params.append("productCode", filters.value.productCode);
+    if (filters.value.productCode)
+      params.append("productCode", filters.value.productCode);
     // Evita conflitto: se expiredFilter === 'open' lo status è già aggiunto sopra
-    if (filters.value.status && filters.value.expiredFilter !== "open")
+    if (filters.value.status)
       params.append("status", filters.value.status);
-    if (filters.value.dateFrom) params.append("dateFrom", filters.value.dateFrom);
+    if (filters.value.dateFrom)
+      params.append("dateFrom", filters.value.dateFrom);
     if (filters.value.dateTo) params.append("dateTo", filters.value.dateTo);
-    if (filters.value.dueDateFrom) params.append("dueDateFrom", filters.value.dueDateFrom);
-    if (filters.value.dueDateTo) params.append("dueDateTo", filters.value.dueDateTo);
+    if (filters.value.dueDateFrom)
+      params.append("dueDateFrom", filters.value.dueDateFrom);
+    if (filters.value.dueDateTo)
+      params.append("dueDateTo", filters.value.dueDateTo);
 
     const data = await $fetch(`/api/orders?${params.toString()}`);
 

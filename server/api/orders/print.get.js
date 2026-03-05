@@ -95,6 +95,7 @@ export default defineEventHandler(async (event) => {
         balance: o.balance || 0,
         shipDate: o.shipDate || null,
         courier: o.courier || "",
+        firstNote: o.notes && o.notes.length > 0 ? o.notes[0].text || "" : "",
       })),
     };
   } catch (error) {

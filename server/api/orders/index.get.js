@@ -48,6 +48,13 @@ export default defineEventHandler(async (event) => {
       filters.dueDate = { $gt: new Date() }
     }
 
+    if (query.balanceOpen === "true") {
+      filters.balance = { $ne: 0 };
+    } else if (query.balanceClosed === "true") {
+      filters.balance = 0;
+    }
+
+
     // Filtri avanzati cliente (tramite populate)
     const populateMatch = {}
     if (query.clientLastname) {

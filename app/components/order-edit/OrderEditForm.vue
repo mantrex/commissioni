@@ -88,7 +88,7 @@
               @click.stop="handleNewOrder"
               class="action-btn new-btn">
               <span class="btn-label">Nuova</span>
-              <q-tooltip>Crea nuova commissione</q-tooltip>
+              <q-tooltip class="bg-positive">Crea nuova commissione</q-tooltip>
             </q-btn>
           </div>
         </div>
