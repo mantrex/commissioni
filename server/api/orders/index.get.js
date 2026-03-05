@@ -25,8 +25,8 @@ export default defineEventHandler(async (event) => {
 
     // Costruisci filtri
     const filters = {};
-    filter.deletedAt = null;
-    
+    filters.deletedAt = null;
+
     // Filtro per numero commissione
     if (query.commNum) {
       filters.commNum = { $regex: query.commNum, $options: "i" };

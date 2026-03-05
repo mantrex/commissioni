@@ -44,21 +44,16 @@
             @click="handlePrint"
             :disable="isNew"
             class="action-btn print-btn">
-            <q-tooltip class="bg-accent"
-              >Stampa la fattura</q-tooltip
-            >
+            <q-tooltip class="bg-accent">Stampa la fattura</q-tooltip>
           </q-btn>
           <q-btn
-           
             flat
             dense
             icon="delete_forever"
             label="Elimina"
             @click="dialogs.delete.show = true"
             class="action-btn delete-btn">
-            <q-tooltip class="bg-negative"
-              >Elimina la fattura</q-tooltip
-            >
+            <q-tooltip class="bg-negative">Elimina la fattura</q-tooltip>
           </q-btn>
 
           <q-btn
@@ -68,9 +63,9 @@
             icon="save"
             @click="handleSave"
             :loading="saving"
-            class="action-btn save-btn" >
-          <q-tooltip class="bg-primary">Salva la fattura</q-tooltip></q-btn>
-
+            class="action-btn save-btn">
+            <q-tooltip class="bg-primary">Salva la fattura</q-tooltip></q-btn
+          >
         </div>
       </div>
     </div>
@@ -116,6 +111,17 @@
         @auto-save="handleAutoSave" />
     </div>
   </div>
+  <ComponentDialog
+    :side="true"
+    v-model="dialogs.delete.show"
+    title="Elimina Fattura"
+    :component-name="DeleteInvoiceDialog"
+    :component-props="{
+      invoiceId: invoiceData.invoiceId,
+      mongoId: props.invoiceId,
+    }"
+    custom-style="width: 420px"
+    @close="handleDeleteConfirm" />
 </template>
 
 <script setup>
@@ -130,6 +136,8 @@ import Receipts from "~/components/invoice-edit/Receipts.vue";
 import FinancialTotal from "~/components/invoice-edit/FinancialTotal.vue";
 import InvoiceItems from "~/components/invoice-edit/InvoiceItems.vue";
 import { getConfigValue, isConfigActive } from "#shared/config";
+import DeleteInvoiceDialog from "~/components/invoice-edit/DeleteInvoiceDialog.vue";
+import ComponentDialog from "~/components/common/ComponentDialog.vue";
 
 const props = defineProps({
   mode: {
@@ -218,6 +226,10 @@ const invoiceData = reactive({
     netWeight: "",
     grossWeight: "",
   },
+});
+
+const dialogs = reactive({
+  delete: { show: false },
 });
 
 // ✅ Handler per aggiornare imponibile da InvoiceItems
@@ -466,6 +478,14 @@ const stopAutosave = () => {
   }
 };
 
+const handleDeleteConfirm = (confirmed) => {
+  dialogs.delete.show = false;
+  if (confirmed) {
+    $q.notify({ type: "positive", message: "Fattura eliminata" });
+    handleBack();
+  }
+};
+
 onMounted(async () => {
   await loadInvoice();
   startAutosave();
@@ -563,8 +583,6 @@ onUnmounted(() => {
 
       .save-btn {
         color: $primary;
-
-   
       }
 
       .delete-btn {

@@ -18,6 +18,7 @@ export default defineEventHandler(async (event) => {
 
     // Costruisci filtri
     const filters = {}
+    filters.deletedAt = null;
 
     // Filtro per ID fattura
     if (query.invoiceId) {
