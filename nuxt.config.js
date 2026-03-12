@@ -2,7 +2,7 @@ export default defineNuxtConfig({
   ssr: false,
   devServer: {
     port: 3010,
-    host:  '0.0.0.0'
+    host: "0.0.0.0",
   },
   devtools: { enabled: true },
   ignore: ["temp/**", "public/temp/**"],
@@ -16,15 +16,24 @@ export default defineNuxtConfig({
     adminPassword: process.env.ADMIN_PASSWORD,
     sessionSecret: process.env.SESSION_SECRET,
     public: {
-      expiredDays: parseInt(process.env.EXPIRED) || 30
+      expiredDays: parseInt(process.env.EXPIRED) || 30,
     },
   },
 
-  modules: ["@nuxt/fonts", "nuxt-quasar-ui", "@pinia/nuxt", "pinia-plugin-persistedstate"],
+  modules: [
+    "@nuxt/fonts",
+    "nuxt-quasar-ui",
+    "@pinia/nuxt",
+    "pinia-plugin-persistedstate",
+  ],
 
   fonts: {
     families: [
-      { name: "M PLUS Rounded 1c", provider: "google", weights: [400, 500, 700] },
+      {
+        name: "M PLUS Rounded 1c",
+        provider: "google",
+        weights: [400, 500, 700],
+      },
       { name: "Noto Sans JP", provider: "google", weights: [400, 500, 700] },
     ],
   },
@@ -33,6 +42,7 @@ export default defineNuxtConfig({
     "quasar/src/css/index.sass",
     "@quasar/extras/material-icons/material-icons.css",
     "@/assets/styles/app.scss",
+    "@quasar/extras/roboto-font/roboto-font.css"
   ],
 
   quasar: {
@@ -58,14 +68,14 @@ export default defineNuxtConfig({
       devSourcemap: true,
       preprocessorOptions: {
         scss: {
-          api: 'modern-compiler', // oppure 'modern'
-          silenceDeprecations: ['legacy-js-api', 'import']
+          api: "modern-compiler", // oppure 'modern'
+          silenceDeprecations: ["legacy-js-api", "import"],
         },
         sass: {
-          api: 'modern-compiler',
-          silenceDeprecations: ['legacy-js-api', 'import']
-        }
-      }
+          api: "modern-compiler",
+          silenceDeprecations: ["legacy-js-api", "import"],
+        },
+      },
     },
 
     server: {
@@ -82,13 +92,13 @@ export default defineNuxtConfig({
           "temp/**",
           "**/dist/**",
           "**/.git/**",
-          '**/public/repo/kanji/**'
+          "**/public/repo/kanji/**",
         ],
       },
       hmr: {
         overlay: true,
         clientPort: undefined,
-        timeout: 10000, 
+        timeout: 10000,
       },
       optimizeDeps: {
         include: ["vue", "vue-router", "quasar", "@quasar/extras"],
@@ -111,12 +121,12 @@ export default defineNuxtConfig({
     head: {
       meta: [
         {
-          name: 'viewport',
-          content: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no'
-        }
+          name: "viewport",
+          content:
+            "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no",
+        },
       ],
-      script: [
-      ],
+      script: [],
     },
   },
 });

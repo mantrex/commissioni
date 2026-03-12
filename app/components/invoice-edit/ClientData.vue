@@ -34,18 +34,7 @@ const client = defineModel('client', {
   background: $contrast;
 }
 
-.section-header {
-  padding: 6px 12px !important;
-  background: $bg-light;
-  border-bottom: 1px solid $border;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 600;
-  font-size: 13px;
-  color: $text-primary;
-  min-height: 32px;
-}
+
 
 .compact-section {
   padding: 8px !important;

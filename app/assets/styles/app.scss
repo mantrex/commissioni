@@ -7,9 +7,10 @@
 }
 
 body {
-  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-weight:bold;
 }
 
 #__nuxt {
@@ -50,8 +51,36 @@ body {
 .bg-important {
   background: $important;
 }
+.bg-readonly {
+  background: $readonly;
+}
+.bg-c-header {
+  background:$c-header;
+}
+
+
+.section-header {
+  padding: 6px 12px !important;
+  background: $c-header;
+
+  border-bottom: 1px solid $border;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  min-height: 32px;
+}
+
+.section-header span {
+  color:$negative-contrast;
+}
 @media print {
   .no-print {
     display: none !important;
+  }
+
+  #__nuxt {
+    height: auto !important;
   }
 }

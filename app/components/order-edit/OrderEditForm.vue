@@ -275,7 +275,15 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted, nextTick, onBeforeUnmount } from "vue";
+import {
+  ref,
+  reactive,
+  computed,
+  onMounted,
+  onUnmounted,
+  nextTick,
+  onBeforeUnmount,
+} from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useQuasar } from "quasar";
 import ComponentDialog from "~/components/common/ComponentDialog.vue";
@@ -357,7 +365,6 @@ const dialogs = reactive({
 const canCreateInvoice = computed(() =>
   orderData.items?.some((item) => item.invoiced && item.invoiced > 0),
 );
-
 
 const getClientName = (client) => {
   if (!client) return "";
@@ -495,7 +502,7 @@ const handleNavNext = async (nextOrder) => {
 
 // ─── Nuova commissione ───
 const handleNewOrder = async () => {
-  await handleSave(true)
+  await handleSave(true);
   dialogs.newOrder.show = true;
 };
 
@@ -543,7 +550,7 @@ const handleCancelConfirm = (confirmed) => {
 
 // ─── Fattura ───
 const handleInvoice = async () => {
-    await handleSave(true)
+  await handleSave(true);
   dialogs.invoices.show = true;
 };
 
@@ -768,14 +775,14 @@ const stopAutosave = () => {
 };
 
 const handlePrint = async () => {
-    await handleSave(true)
-   router.push(`/orders/print/${orderId.value}`)
-}
+  await handleSave(true);
+  router.push(`/orders/print/${orderId.value}`);
+};
 
 const removeGuard = router.beforeEach((to) => {
   // Ferma sempre l'autosave quando si naviga via da questa pagina
-  stopAutosave()
-})
+  stopAutosave();
+});
 
 onMounted(async () => {
   await loadOrder();
@@ -787,12 +794,13 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
-  stopAutosave()
-  removeGuard() // rimuove il guard per non lasciarlo attivo globalmente
-})
+  stopAutosave();
+  removeGuard(); // rimuove il guard per non lasciarlo attivo globalmente
+});
 
 onUnmounted(() => {
   stopAutosave();
+  removeGuard();
 });
 </script>
 
@@ -957,21 +965,16 @@ onUnmounted(() => {
 .top-section-card {
   background: $contrast;
 
-  .section-header {
-    padding: 12px 16px;
-    background: $bg-light;
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    color: $text-primary;
+  }
 
-    .header-left {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-weight: 600;
-      color: $text-primary;
-    }
-
-    .collapse-btn {
-      margin-right: 4px;
-    }
+  .collapse-btn {
+    margin-right: 4px;
   }
 }
 

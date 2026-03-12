@@ -136,9 +136,7 @@ const packageColumns = [
   background: $contrast;
 }
 
-.section-header {
-  padding: 12px 16px;
-  background: $bg-light;
+
 
   .header-left {
     display: flex;
@@ -147,7 +145,7 @@ const packageColumns = [
     font-weight: 600;
     color: $text-primary;
   }
-}
+
 
 .section-content {
   padding: 16px;

@@ -420,19 +420,7 @@ const handleDeleteConfirm = async (confirmed) => {
   background: $contrast;
   flex: 1;
 }
-.section-header {
-  padding: 6px 12px !important;
-  background: $bg-light;
-  border-bottom: 1px solid $border;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 600;
-  font-size: 13px;
-  color: $text-primary;
-  min-height: 36px;
-  flex-shrink: 0;
-}
+
 .list-table {
   height: 100%;
   :deep(tbody tr) {

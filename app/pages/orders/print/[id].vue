@@ -199,6 +199,8 @@
 import { ref, computed, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
+definePageMeta({ layout: false })
+
 const route = useRoute();
 const router = useRouter();
 const orderId = route.params.id;
@@ -560,13 +562,11 @@ onMounted(async () => {
 
   .print-body {
     max-width: 100%;
-    padding: 10mm 12mm;
+    padding: 5mm 10mm;
     font-size: 11px;
   }
 
-  .p-commnum {
-    font-size: 18px;
-  }
+  .p-commnum { font-size: 18px; }
 
   .p-main-section {
     grid-template-columns: 200px 1fr 130px;
@@ -579,7 +579,7 @@ onMounted(async () => {
   }
 
   @page {
-    size: A4 portrait;
+    size: A4 landscape;
     margin: 10mm;
   }
 }

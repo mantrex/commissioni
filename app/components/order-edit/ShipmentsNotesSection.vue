@@ -182,25 +182,19 @@ watch(
   background: $contrast;
 }
 
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
-  background: $bg-light;
 
   .header-left {
     display: flex;
     align-items: center;
     gap: 8px;
-    font-weight: 600;
+
     color: $text-primary;
   }
 
   .collapse-btn {
     margin-right: 4px;
   }
-}
+
 
 .section-content {
   padding: 16px;

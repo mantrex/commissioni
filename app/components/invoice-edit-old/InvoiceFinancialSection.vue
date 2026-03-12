@@ -93,9 +93,7 @@ watch(() => [financial.value.taxable, financial.value.hasVat, financial.value.va
   background: $contrast;
 }
 
-.section-header {
-  padding: 12px 16px;
-  background: $bg-light;
+
 
   .header-left {
     display: flex;
@@ -104,7 +102,7 @@ watch(() => [financial.value.taxable, financial.value.hasVat, financial.value.va
     font-weight: 600;
     color: $text-primary;
   }
-}
+
 
 .section-content {
   padding: 16px;

@@ -1,8 +1,8 @@
 <template>
   <div class="client-section-content">
     <!-- Header interno solo con VIP e pulsante modifica -->
-    <div class="client-mini-header">
-      <div class="header-left">
+    <div class="client-mini-header ">
+      <div class="header-left" >
         <q-icon name="person" size="18px" />
         <span class="section-label">Cliente</span>
         <q-checkbox v-if="client" v-model="client.vip" label="VIP" dense class="q-ml-sm" />
@@ -41,40 +41,40 @@
     <div class="client-data" v-if="client?._id || showEmptyForm">
       <div class="row q-col-gutter-sm">
         <div class="col-6">
-          <q-input v-model="client.lastname" label="Cognome" outlined dense readonly />
+          <q-input v-model="client.lastname" label="Cognome" class='bg-readonly' outlined dense readonly />
         </div>
         <div class="col-6">
-          <q-input v-model="client.firstname" label="Nome" outlined dense readonly />
+          <q-input v-model="client.firstname" label="Nome" class='bg-readonly' outlined dense readonly />
         </div>
       </div>
 
-      <q-input v-model="client.company" label="Ditta" outlined dense readonly class="q-mt-sm" />
-      <q-input v-model="client.address" label="Indirizzo" outlined dense readonly class="q-mt-sm" />
+      <q-input v-model="client.company" label="Ditta" outlined dense readonly class="q-mt-sm bg-readonly" />
+      <q-input v-model="client.address" label="Indirizzo" outlined dense readonly class="q-mt-sm bg-readonly" />
 
       <div class="row q-col-gutter-sm q-mt-sm">
         <div class="col-4">
-          <q-input v-model="client.cap" label="CAP" outlined dense readonly />
+          <q-input v-model="client.cap" label="CAP" outlined dense readonly class="bg-readonly" />
         </div>
         <div class="col-8">
-          <q-input v-model="client.city" label="Città" outlined dense readonly />
+          <q-input v-model="client.city" label="Città" outlined dense readonly class="bg-readonly" />
         </div>
       </div>
 
       <div class="row q-col-gutter-sm q-mt-sm">
         <div class="col-6">
-          <q-input v-model="client.state" label="Paese" outlined dense readonly />
+          <q-input v-model="client.state" label="Paese" outlined dense readonly class="bg-readonly" />
         </div>
         <div class="col-6">
-          <q-input v-model="client.tel" label="Telefono" outlined dense readonly />
+          <q-input v-model="client.tel" label="Telefono" outlined dense readonly class="bg-readonly" />
         </div>
       </div>
 
       <div class="row q-col-gutter-sm q-mt-sm">
         <div class="col-6">
-          <q-input v-model="client.email" label="Email" outlined dense readonly />
+          <q-input v-model="client.email" label="Email" outlined dense readonly class="bg-readonly" />
         </div>
         <div class="col-6">
-          <q-input v-model="client.piva" label="P.IVA" outlined dense readonly />
+          <q-input v-model="client.piva" label="P.IVA" outlined dense readonly class="bg-readonly" />
         </div>
       </div>
     </div>
@@ -210,7 +210,7 @@ loadClients()
 
 .client-data {
   padding: 12px;
-  background: $bg-light;
+ 
   border-radius: 4px;
 }
 </style>

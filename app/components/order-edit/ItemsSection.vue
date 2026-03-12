@@ -122,6 +122,13 @@ const columns = [
     label: 'Des. Art.',
     align: 'left',
     field: row => row.productId?.name || row.description,
+    style: 'min-width: 150px'
+  },
+  {
+    name: 'note',
+    label: 'Nota',
+    align: 'left',
+    field: row => row.note,
     style: 'min-width: 200px'
   },
   {
@@ -228,14 +235,14 @@ const toggleInvoiced = async (index, newValue) => {
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  background: $bg-light;
+
 
   .header-left {
     display: flex;
     align-items: center;
     gap: 8px;
     font-weight: 600;
-    color: $text-primary;
+ 
   }
 
   .collapse-btn {
@@ -251,7 +258,7 @@ const toggleInvoiced = async (index, newValue) => {
   :deep(th) {
     font-weight: 600;
     color: $text-primary;
-    background: $bg-light;
+
   }
 
   :deep(tbody tr:hover) {
