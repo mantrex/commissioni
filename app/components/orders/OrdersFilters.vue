@@ -284,3 +284,10 @@ onMounted(async () => {
   await loadAgents()
 })
 </script>
+
+<style scoped lang="scss">
+.filters-card {
+    box-shadow: 0 2px 4px $dark!important;
+
+}
+</style>

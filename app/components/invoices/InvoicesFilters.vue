@@ -116,6 +116,8 @@ const issuedOptions = [
 .filters-card {
   background: $contrast;
   border-radius: 8px;
+    box-shadow: 0 2px 4px $dark!important;
+
 }
 
 .filters-section {

@@ -318,7 +318,7 @@ const getAgentName = (agentId) => {
 
 .orders-table {
   height: 100%;
-
+  border-radius:4px;
   :deep(.q-table__top) {
     padding: 12px;
   }
@@ -326,7 +326,7 @@ const getAgentName = (agentId) => {
   :deep(tbody tr) {
     cursor: pointer;
     transition: background-color 0.2s;
-
+    
     &:hover {
       background-color: rgba($primary, 0.05);
     }
@@ -335,7 +335,7 @@ const getAgentName = (agentId) => {
   :deep(th) {
     font-weight: 600;
     color: $text-primary;
-    background: $bg-light;
+    background: $bg-light2;
     position: sticky;
     top: 0;
     z-index: 1;

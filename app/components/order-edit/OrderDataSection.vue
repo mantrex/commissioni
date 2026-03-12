@@ -214,15 +214,6 @@ onMounted(async () => {
   flex-direction: column;
   gap: 12px;
 }
-.is-important {
-  background: $important;
-  :deep(input) {
-    font-weight: 700;
-  }
-  :deep(.q-field__native) {
-    font-weight: 700;
-  }
-}
 
 .data-mini-header {
   display: flex;

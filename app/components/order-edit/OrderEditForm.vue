@@ -45,6 +45,16 @@
               @next="handleNavNext"
               @jump="handleNavJump"
               @status-change="handleStatusChange" />
+                          <q-btn
+              flat
+              dense
+              icon="print"
+              @click.stop="handlePrint"
+              class="action-btn print-btn">
+     
+              <q-tooltip class="bg-accent">Stampa commissione</q-tooltip>
+            </q-btn>
+
           </div>
 
           <!-- DESTRA: azioni -->
@@ -59,15 +69,6 @@
               <q-tooltip class="bg-secondary"
                 >Gestisci fatture di questa commissione</q-tooltip
               >
-            </q-btn>
-            <q-btn
-              flat
-              dense
-              icon="print"
-              @click.stop="handlePrint"
-              class="action-btn print-btn">
-              <span class="btn-label">Stampa</span>
-              <q-tooltip class="bg-accent">Stampa commissione</q-tooltip>
             </q-btn>
 
             <q-btn

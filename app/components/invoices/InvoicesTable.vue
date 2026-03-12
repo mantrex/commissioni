@@ -240,11 +240,16 @@ const getClientName = (client) => {
     position: sticky;
     top: 0;
     z-index: 1;
-    background: $bg-light;
+
     font-weight: 600;
     font-size: 13px;
     color: $text-primary;
     padding: 8px 12px;
+  }
+
+  :deep(thead th) {
+    background: $bg-light2;
+
   }
 
   :deep(tbody tr) {
