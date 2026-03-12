@@ -1,7 +1,7 @@
 <template>
   <div class="client-section-content">
     <!-- Header interno solo con VIP e pulsante modifica -->
-    <div class="client-mini-header ">
+    <div class="client-mini-header sub-header ">
       <div class="header-left" >
         <q-icon name="person" size="18px" />
         <span class="section-label">Cliente</span>
@@ -192,7 +192,6 @@ loadClients()
   justify-content: space-between;
   align-items: center;
   padding: 8px 12px;
-  background: rgba($primary, 0.05);
   border-radius: 4px;
 
   .header-left {
@@ -208,9 +207,4 @@ loadClients()
   }
 }
 
-.client-data {
-  padding: 12px;
- 
-  border-radius: 4px;
-}
 </style>

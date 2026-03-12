@@ -1,5 +1,5 @@
 <template>
-  <q-card flat bordered class="items-card">
+  <q-card flat bordered class="items-card section-card">
     <q-card-section class="section-header">
       <div class="header-left-items">
         <q-icon name="inventory_2" size="18px" />
@@ -126,9 +126,6 @@ watch(
 </script>
 
 <style scoped lang="scss">
-.items-card {
-  background: $contrast;
-}
 
 
  

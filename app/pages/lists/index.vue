@@ -18,7 +18,7 @@
     </div>
 
     <div class="main-content">
-      <q-card flat bordered class="filter-card">
+      <q-card flat bordered class="filter-card section-card">
         <q-card-section class="row items-center q-gutter-md">
           <q-icon name="list_alt" size="24px" color="primary" />
           <span class="text-h6 text-primary">Gestione Liste</span>
@@ -44,7 +44,7 @@
         </q-card-section>
       </q-card>
 
-      <q-card v-if="selectedListType" flat bordered class="table-card">
+      <q-card v-if="selectedListType" flat bordered class="table-card section-card">
         <q-card-section class="section-header">
           <q-icon name="format_list_bulleted" size="18px" />
           <span>{{ currentListLabel }}</span>
@@ -406,11 +406,10 @@ const handleDeleteConfirm = async (confirmed) => {
   gap: 16px;
 }
 .filter-card {
-  background: $contrast;
+
   flex-shrink: 0;
 }
 .table-card {
-  background: $contrast;
   flex: 1;
   overflow: hidden;
   display: flex;

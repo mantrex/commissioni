@@ -1,5 +1,5 @@
 <template>
-  <q-card flat bordered class="receipts-card">
+  <q-card flat bordered class="receipts-card section-card">
     <q-card-section class="section-header">
       <div class="header-left-items">
         <q-icon name="receipt" size="18px" />
@@ -47,23 +47,7 @@ const handleRemove = (index) => {
 </script>
 
 <style scoped lang="scss">
-.receipts-card {
-  background: $contrast;
-}
 
-
-
-  .header-left-items {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex: 1;
-  }
-
-
-.compact-section {
-  padding: 8px !important;
-}
 
 .receipts-list {
   display: flex;
@@ -79,23 +63,13 @@ const handleRemove = (index) => {
 
   .receipt-label {
     font-size: 11px;
-    font-weight: 600;
     color: $text-secondary;
   }
 
-  .receipt-input {
-    :deep(.q-field__control) {
-      min-height: 32px;
-      height: 32px;
-    }
-
-    :deep(.q-field__label) {
-      font-size: 12px;
-    }
-
-    :deep(input) {
-      font-size: 12px;
-    }
+  .receipt-input :deep(.q-field__control) {
+    min-height: 32px;
+    height: 32px;
   }
 }
+
 </style>

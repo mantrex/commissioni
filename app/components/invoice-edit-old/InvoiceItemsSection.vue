@@ -1,5 +1,5 @@
 <template>
-  <q-card flat bordered class="items-section">
+  <q-card flat bordered class="items-section section-card">
     <q-card-section class="section-header">
       <div class="header-left">
         <q-icon name="inventory_2" size="20px" />
@@ -134,9 +134,7 @@ const formatCurrency = (value) => {
 </script>
 
 <style scoped lang="scss">
-.items-section {
-  background: $contrast;
-}
+
 
 
 

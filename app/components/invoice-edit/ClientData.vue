@@ -1,5 +1,5 @@
 <template>
-  <q-card flat bordered class="client-card">
+  <q-card flat bordered class="client-card section-card">
     <q-card-section class="section-header">
       <q-icon name="person" size="18px" />
       <span>Dati Cliente</span>
@@ -30,11 +30,6 @@ const client = defineModel('client', {
 </script>
 
 <style scoped lang="scss">
-.client-card {
-  background: $contrast;
-}
-
-
 
 .compact-section {
   padding: 8px !important;

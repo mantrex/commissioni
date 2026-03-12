@@ -57,7 +57,7 @@
           </q-card>
 
           <!-- Imballo e Pacchi -->
-          <q-card flat bordered class="packing-card">
+          <q-card flat bordered class="packing-card section-card">
             <q-card-section class="section-header">
               <q-icon name="inventory" size="18px" />
               <span>Imballo e Pacchi</span>
@@ -912,15 +912,7 @@ onMounted(() => {
   }
 }
 
-// Cards
-.client-card,
-.data-card,
-.receipts-card,
-.financial-card,
-.packing-card,
-.shipping-card {
-  background: $contrast;
-}
+
 
 // Responsive
 @media (max-width: 1200px) {

@@ -1,5 +1,5 @@
 <template>
-  <q-card flat bordered class="financial-card">
+  <q-card flat bordered class="financial-card section-card">
     <q-card-section class="section-header">
       <q-icon name="euro" size="18px" />
       <span>Totale fattura</span>
@@ -43,9 +43,6 @@ watch(
 </script>
 
 <style scoped lang="scss">
-.financial-card {
-  background: $contrast;
-}
 
 
 

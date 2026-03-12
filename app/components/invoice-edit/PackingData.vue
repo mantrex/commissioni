@@ -1,5 +1,5 @@
 <template>
-  <q-card flat bordered class="packing-card">
+  <q-card flat bordered class="packing-card section-card">
     <q-card-section class="section-header">
       <q-icon name="inventory" size="18px" />
       <span>Imballo e Pacchi</span>
@@ -94,10 +94,6 @@ const handleDialogClose = (result) => {
 
 <style scoped lang="scss">
 @use "sass:color";
-
-.packing-card {
-  background: $contrast;
-}
 
 
 .compact-section {

@@ -1,7 +1,7 @@
 <template>
   <div class="order-data-content">
     <!-- Header interno -->
-    <div class="data-mini-header">
+    <div class="data-mini-header sub-header">
       <q-icon name="assignment" size="18px" />
       <span class="section-label">Dati Ordine</span>
     </div>
@@ -229,8 +229,8 @@ onMounted(async () => {
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  background: rgba($primary, 0.05);
-  border-radius: 4px;
+
+ 
 
   .section-label {
     font-weight: 600;

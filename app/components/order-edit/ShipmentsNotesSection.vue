@@ -1,5 +1,5 @@
 <template>
-  <q-card flat bordered class="shipments-notes-section">
+  <q-card flat bordered class="shipments-notes-section section-card">
     <q-card-section class="section-header">
       <div class="header-left">
         <q-btn flat dense round :icon="collapsed ? 'expand_more' : 'expand_less'" size="sm"
@@ -17,7 +17,7 @@
         <div class="three-columns">
           <!-- Colonna 1: Corrieri -->
           <div class="column-wrapper">
-            <div class="column-header">
+            <div class="column-header sub-header">
               <div class="header-left">
                 <q-icon name="local_shipping" size="18px" />
                 <span>Corrieri</span>
@@ -42,7 +42,7 @@
 
           <!-- Colonna 2: Note -->
           <div class="column-wrapper">
-            <div class="column-header">
+            <div class="column-header sub-header">
               <div class="header-left">
                 <q-icon name="notes" size="18px" />
                 <span>Note</span>
@@ -66,7 +66,7 @@
 
           <!-- Colonna 3: Dati Finanziari -->
           <div class="column-wrapper financial-data-wrapper">
-            <div class="column-header">
+            <div class="column-header sub-header">
               <div class="header-left">
                 <q-icon name="euro" size="18px" />
                 <span>Dati Finanziari</span>
@@ -178,9 +178,7 @@ watch(
 </script>
 
 <style scoped lang="scss">
-.shipments-notes-section {
-  background: $contrast;
-}
+
 
 
   .header-left {
@@ -221,8 +219,7 @@ watch(
   align-items: center;
   justify-content: space-between;
   padding: 8px 12px;
-  background: $bg-light;
-  border-radius: 4px;
+  
 
   .header-left {
     display: flex;

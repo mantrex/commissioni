@@ -1,5 +1,5 @@
 <template>
-  <q-card flat bordered class="items-section">
+  <q-card flat bordered class="items-section section-card">
     <q-card-section class="section-header">
       <div class="header-left">
         <q-btn flat dense round :icon="collapsed ? 'expand_more' : 'expand_less'" size="sm"

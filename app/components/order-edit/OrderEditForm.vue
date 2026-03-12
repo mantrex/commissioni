@@ -109,7 +109,7 @@
       <!-- GRIGLIA PRINCIPALE -->
       <div class="order-grid">
         <!-- Sezione Cliente + Dati Ordine collassabile -->
-        <q-card flat bordered class="top-section-card">
+        <q-card flat bordered class="section-card">
           <q-card-section class="section-header">
             <div class="header-left">
               <q-btn
@@ -805,6 +805,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped lang="scss">
+
 .order-number-badge {
   display: inline-flex;
   align-items: center;
@@ -962,21 +963,21 @@ onUnmounted(() => {
   gap: 16px;
 }
 
-.top-section-card {
-  background: $contrast;
+
+
 
   .header-left {
     display: flex;
     align-items: center;
     gap: 8px;
-    font-weight: 600;
-    color: $text-primary;
+
+ 
   }
 
   .collapse-btn {
     margin-right: 4px;
   }
-}
+
 
 .top-section {
   display: grid;

@@ -1,5 +1,5 @@
 <template>
-  <q-card flat bordered class="shipping-card">
+  <q-card flat bordered class="shipping-card section-card">
     <q-card-section class="section-header">
       <q-icon name="local_shipping" size="18px" />
       <span>Etichetta Spedizione</span>
@@ -27,9 +27,7 @@ const label = defineModel('label', {
 </script>
 
 <style scoped lang="scss">
-.shipping-card {
-  background: $contrast;
-}
+
 
 
 

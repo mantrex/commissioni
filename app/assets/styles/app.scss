@@ -7,27 +7,30 @@
 }
 
 body {
-
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  font-weight:bold;
+  font-weight: bold;
 }
 
 #__nuxt {
   height: 100vh;
 }
 
+// ── Utility colori ─────────────────────────────────────
 .bg-body {
-  background:$body!important;
+  background: $body !important;
 }
+
 .text-body {
-  color:$body;
+  color: $body;
 }
-.bg-primary{
-  background:$primary!important;
+
+.bg-primary {
+  background: $primary !important;
 }
-.text-primary{
-  color: $primary!important;
+
+.text-primary {
+  color: $primary !important;
 }
 
 .bg-accent {
@@ -41,6 +44,7 @@ body {
 .text-readonly {
   color: $readonly;
 }
+
 .bg-readonly {
   background: $readonly;
 }
@@ -48,33 +52,109 @@ body {
 .text-important {
   color: $important;
 }
+
 .bg-important {
   background: $important;
 }
-.bg-readonly {
-  background: $readonly;
-}
+
 .bg-c-header {
-  background:$c-header;
+  background: $c-header;
 }
 
+// ── Card sezione generica ──────────────────────────────
+.q-card.section-card {
+  background: $contrast;
+  box-shadow: 0 2px 4px $dark!important;
+}
 
+// ── Header di sezione (barra titolo card) ──────────────
 .section-header {
   padding: 6px 12px !important;
   background: $c-header;
-
   border-bottom: 1px solid $border;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
   display: flex;
   align-items: center;
   gap: 8px;
   font-weight: 600;
   font-size: 13px;
   min-height: 32px;
+  color: $negative-contrast;
+
+  span {
+    color: $negative-contrast;
+  }
+
+  .q-icon {
+    color: $negative-contrast;
+  }
+
+  .header-left,
+  .header-left-items {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    color: $negative-contrast;
+
+    .q-icon {
+      color: $negative-contrast;
+    }
+  }
+
+  .collapse-btn {
+    margin-right: 4px;
+  }
+}
+.sub-header {
+  border-radius:4px;
+  background:$sub-header;
 }
 
-.section-header span {
-  color:$negative-contrast;
+// ── Corpo card standard ────────────────────────────────
+.section-content {
+  padding: 16px;
 }
+
+// ── Corpo card compatto (invoice-edit) ─────────────────
+.compact-section {
+  padding: 8px !important;
+}
+
+.compact-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+
+  .span-2 {
+    grid-column: span 2;
+  }
+
+  :deep(.q-field) {
+    margin-bottom: 0;
+  }
+
+  :deep(.q-field__control) {
+    min-height: 40px;
+  }
+
+  :deep(.q-field__label) {
+    font-size: 12px;
+  }
+
+  :deep(input),
+  :deep(textarea) {
+    font-size: 12px;
+  }
+
+  :deep(.q-select .q-field__native) {
+    min-height: 40px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+}
+
+// ── Print ──────────────────────────────────────────────
 @media print {
   .no-print {
     display: none !important;
