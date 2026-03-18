@@ -33,7 +33,7 @@
             </span>
           </div>
 
-          <!-- CENTRO: QuickNav sempre visibile -->
+          <!-- CENTRO: QuickNav + Stampa -->
           <div class="header-center">
             <QuickNav
               ref="quickNavRef"
@@ -45,16 +45,14 @@
               @next="handleNavNext"
               @jump="handleNavJump"
               @status-change="handleStatusChange" />
-                          <q-btn
+            <q-btn
               flat
               dense
               icon="print"
               @click.stop="handlePrint"
               class="action-btn print-btn">
-     
               <q-tooltip class="bg-accent">Stampa commissione</q-tooltip>
             </q-btn>
-
           </div>
 
           <!-- DESTRA: azioni -->
@@ -70,7 +68,6 @@
                 >Gestisci fatture di questa commissione</q-tooltip
               >
             </q-btn>
-
             <q-btn
               v-if="!isNew"
               flat
@@ -91,7 +88,6 @@
               class="action-btn save-btn">
               <span class="btn-label">Salva</span>
             </q-btn>
-
             <q-btn
               flat
               dense
@@ -136,6 +132,7 @@
                 v-model:client="orderData.client"
                 @edit-client="handleEditClient" />
               <OrderDataSection
+                ref="orderDataSectionRef"
                 v-model:data="orderData.orderData"
                 v-model:commNum="orderData.commNum"
                 @edit-agent="handleEditAgent"
@@ -240,7 +237,7 @@
       :component-name="OrderInvoicesDialog"
       :component-props="{
         commNum: orderData.commNum,
-        orderId: orderId,
+        orderId: mongoId,
         canCreate: canCreateInvoice,
       }"
       custom-style="width: 500px"
@@ -281,9 +278,9 @@ import {
   reactive,
   computed,
   onMounted,
+  onBeforeUnmount,
   onUnmounted,
   nextTick,
-  onBeforeUnmount,
 } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useQuasar } from "quasar";
@@ -300,44 +297,55 @@ import AgentDialog from "./AgentDialog.vue";
 import NewOrderDialog from "~/components/orders/NewOrderDialog.vue";
 import { getConfigValue, isConfigActive } from "#shared/config";
 import OrderInvoicesDialog from "~/components/invoices/OrderInvoicesDialog.vue";
+const { startAutosave, stopAutosave } = useGlobalAutosave('orders')
 
-// ─── Autosave ───
 const autosaveEnabled = isConfigActive("AUTOSAVE_ORDERS");
 const autosaveSeconds = getConfigValue("AUTOSAVE_ORDERS");
-let autosaveTimer = null;
 
 const router = useRouter();
 const route = useRoute();
 const $q = useQuasar();
 
-// ─── orderId e isNew REATTIVI ───
-// Usando computed invece di const, isNew si aggiorna automaticamente
-// quando router.replace() cambia l'URL da /orders/new a /orders/:mongoId
-// Questo è fondamentale per mostrare il tasto Elimina dopo il primo salvataggio
-const orderId = computed(() => route.params.id);
-const isNew = computed(() => !orderId.value || orderId.value === "new");
+// ─────────────────────────────────────────────────────────────────────────────
+// mongoId: ID locale del documento. Non dipende MAI dal route per POST/PUT.
+//   - ordine esistente → valorizzato subito da route.params.id
+//   - nuovo ordine     → valorizzato dopo il POST iniziale in onMounted
+// isNew: usato SOLO per la UI (tasto Elimina visibile solo dopo il primo save)
+// ─────────────────────────────────────────────────────────────────────────────
+const mongoId = ref(
+  route.params.id && route.params.id !== "new" ? route.params.id : null,
+);
+const orderDataSectionRef = ref(null)
 
+const isNew = computed(() => !mongoId.value);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Lock anti-concorrenza.
+//   saving   → reattivo, mostrato nella UI (spinner tasto Salva)
+//   busySave → flag JS puro, settato PRIMA dell'await.
+//              Garantisce che se una chiamata è ancora in volo, il tick
+//              successivo dell'autosave (o un click manuale) la salta
+//              senza accodarsi. Ref non serve: non deve essere reattivo.
+// ─────────────────────────────────────────────────────────────────────────────
 const saving = ref(false);
+let busySave = false;
+
 const deleting = ref(false);
 const topSectionCollapsed = ref(false);
 const quickNavRef = ref(null);
 
 const presetCommNum = route.query.commNum || "";
-
-// Statuses
 const statusOptions = ref([]);
 const { statuses: allStatuses, loadStatuses } = useStatuses();
 
-// Dati ordine
 const orderData = reactive({
   commNum: presetCommNum,
   client: null,
-  invoices: { show: false },
   orderData: {
-    date: new Date().toISOString().split("T")[0],
+    date: null,
     dueDate: null,
     agentId: null,
-    status: "APERTA",
+    status: null,
   },
   shipments: Array(3)
     .fill(null)
@@ -349,7 +357,6 @@ const orderData = reactive({
   items: [],
 });
 
-// Dialogs
 const dialogs = reactive({
   client: { show: false, isNew: false, data: null },
   item: { show: false, isNew: false, data: null, index: null },
@@ -362,7 +369,7 @@ const dialogs = reactive({
   newOrder: { show: false },
 });
 
-// ─── Computed ───
+// ─── Computed ─────────────────────────────────────────────────────────────────
 const canCreateInvoice = computed(() =>
   orderData.items?.some((item) => item.invoiced && item.invoiced > 0),
 );
@@ -375,15 +382,12 @@ const getClientName = (client) => {
   return parts.length > 0 ? parts.join(" ") : client.company || "";
 };
 
-// ─── Click header → focus QuickNav ───
-const handleHeaderClick = () => {
-  quickNavRef.value?.focus();
-};
+const handleHeaderClick = () => quickNavRef.value?.focus();
 
-// ─── Build body (condiviso) ───
+// ─── Build body ───────────────────────────────────────────────────────────────
 const buildBody = () => ({
   commNum: orderData.commNum,
-  client: orderData.client?._id ? { _id: orderData.client._id } : undefined,
+  client: orderData.client?._id ? { _id: orderData.client._id,vip: orderData.client.vip ?? false  } : undefined,
   orderData: {
     date: orderData.orderData.date,
     dueDate: orderData.orderData.dueDate,
@@ -411,12 +415,11 @@ const buildBody = () => ({
   },
 });
 
-// ─── Load ───
+// ─── Load ordine esistente ────────────────────────────────────────────────────
 const loadOrder = async () => {
-  if (isNew.value) return;
+  if (!mongoId.value) return;
   try {
-    const data = await $fetch(`/api/orders/${orderId.value}`);
-
+    const data = await $fetch(`/api/orders/${mongoId.value}`);
     const order = data.order;
     orderData.commNum = order.commNum || "";
     orderData.client = order.clientId || null;
@@ -428,7 +431,6 @@ const loadOrder = async () => {
       : null;
     orderData.orderData.agentId = order.agentId?._id || null;
     orderData.orderData.status = order.status || "APERTA";
-
     if (order.shipments?.length > 0) {
       orderData.shipments = order.shipments.map((s) => ({
         date: s.date ? new Date(s.date).toISOString().split("T")[0] : null,
@@ -454,65 +456,97 @@ const loadOrder = async () => {
   }
 };
 
-// ─── Save (silent = niente notify, usato dalla nav) ───
-const handleSave = async (silent = false) => {
-  saving.value = true;
+// ─── handleSave ───────────────────────────────────────────────────────────────
+// silent   → non mostra notify di successo (autosave, navigazione, status)
+// fromAuto → chiamata dall'autosave: non tocca `saving` (spinner UI)
+//
+// POST/PUT:
+//   mongoId non valorizzato → POST, poi imposta mongoId e aggiorna URL
+//   mongoId valorizzato     → sempre PUT
+// ─────────────────────────────────────────────────────────────────────────────
+const handleSave = async (silent = false, fromAuto = false) => {
+  if (busySave) return; // ← blocco immediato, prima di qualsiasi await
+  busySave = true;
+
+  if (!fromAuto) saving.value = true;
+
   try {
-    const endpoint = isNew.value
-      ? "/api/orders"
-      : `/api/orders/${orderId.value}`;
-    const method = isNew.value ? "POST" : "PUT";
-
-    const data = await $fetch(endpoint, {
-      method,
-      body: buildBody(),
-    });
-
-    if (isNew.value && data.order?._id) {
-      router.replace(`/orders/${data.order._id}`);
-      if (data.order.commNum) orderData.commNum = data.order.commNum;
+    let data;
+    if (!mongoId.value) {
+      data = await $fetch("/api/orders", { method: "POST", body: buildBody() });
+      if (data?.order?._id) {
+        mongoId.value = data.order._id;
+        router.replace(`/orders/${data.order._id}`);
+        if (data.order.commNum) orderData.commNum = data.order.commNum;
+      }
+    } else {
+      data = await $fetch(`/api/orders/${mongoId.value}`, {
+        method: "PUT",
+        body: buildBody(),
+      });
     }
+
+    if (data?.order?.items) orderData.items = [...data.order.items];
 
     if (!silent) {
       $q.notify({ type: "positive", message: "Ordine salvato con successo" });
     }
   } catch (err) {
-    $q.notify({
-      type: "negative",
-      message: "Errore nel salvataggio",
-      caption: err.message,
-    });
+    if (!silent) {
+      $q.notify({
+        type: "negative",
+        message: "Errore nel salvataggio",
+        caption: err.message,
+      });
+    } else {
+      console.error("❌ Errore autosave ordine:", err);
+    }
   } finally {
-    saving.value = false;
+    busySave = false;
+    if (!fromAuto) saving.value = false;
   }
 };
 
-// ─── Nav handlers (ricevuti da QuickNav) ───
+// RIMUOVI le due funzioni locali startAutosave e stopAutosave
+// e METTI questa unica funzione:
+const startAutosave_local = () => {
+  if (!autosaveEnabled) return
+  startAutosave(async () => {
+    const anyDialogOpen = Object.values(dialogs).some(d => d.show)
+    if (saving.value || !orderData.commNum || anyDialogOpen) return
+    await handleSave(true)
+    $q.notify({ message: '', icon: 'sync', color: 'grey-7', position: 'bottom-left', timeout: 1500 })
+  }, autosaveSeconds)
+}
+
+
+
+// ─── Navigazione ──────────────────────────────────────────────────────────────
+
+const handleBack = async () => {
+  await handleSave(true)
+  router.push('/')
+}
+
+const handleCancel = () => {
+  dialogs.cancel.show = true;
+};
+const handleCancelConfirm = (confirmed) => {
+  if (confirmed) router.push("/");
+};
+
+const handlePrint = async () => {
+  await handleSave(true);
+  router.push(`/orders/print/${mongoId.value}`);
+};
+
 const saveAndNavigate = async (targetId) => {
   await handleSave(true);
   router.push(`/orders/${targetId}`);
 };
 
-const handleNavPrev = async (prevOrder) => {
-  await saveAndNavigate(prevOrder.id);
-};
-
-const handleNavNext = async (nextOrder) => {
-  await saveAndNavigate(nextOrder.id);
-};
-
-// ─── Nuova commissione ───
-const handleNewOrder = async () => {
-  await handleSave(true);
-  dialogs.newOrder.show = true;
-};
-
-const handleNewOrderDialogClose = (newCommNum) => {
-  dialogs.newOrder.show = false;
-  if (newCommNum) {
-    router.push(`/orders/new?commNum=${newCommNum}`);
-  }
-};
+const handleNavPrev = (prevOrder) => saveAndNavigate(prevOrder.id);
+const handleNavNext = (nextOrder) => saveAndNavigate(nextOrder.id);
 
 const handleNavJump = async (commNumStr) => {
   try {
@@ -534,22 +568,24 @@ const handleNavJump = async (commNumStr) => {
 };
 
 const handleStatusChange = async () => {
-  if (!isNew.value) {
+  if (mongoId.value) {
     await handleSave(true);
     $q.notify({ type: "positive", message: "Stato aggiornato", timeout: 1000 });
   }
 };
 
-// ─── Navigation ───
-const handleBack = () => router.push("/");
-const handleCancel = () => {
-  dialogs.cancel.show = true;
-};
-const handleCancelConfirm = (confirmed) => {
-  if (confirmed) router.push("/");
+// ─── Nuova commissione ────────────────────────────────────────────────────────
+const handleNewOrder = async () => {
+  await handleSave(true);
+  dialogs.newOrder.show = true;
 };
 
-// ─── Fattura ───
+const handleNewOrderDialogClose = (newCommNum) => {
+  dialogs.newOrder.show = false;
+  if (newCommNum) router.push(`/orders/new?commNum=${newCommNum}`);
+};
+
+// ─── Fattura ──────────────────────────────────────────────────────────────────
 const handleInvoice = async () => {
   await handleSave(true);
   dialogs.invoices.show = true;
@@ -571,7 +607,7 @@ const handleInvoiceDialogClose = (result) => {
   });
 };
 
-// ─── CommNum ───
+// ─── CommNum ──────────────────────────────────────────────────────────────────
 const handleEditCommNum = () => {
   dialogs.commNum.show = true;
 };
@@ -579,7 +615,7 @@ const handleCommNumDialogClose = (newCommNum) => {
   if (newCommNum) orderData.commNum = newCommNum;
 };
 
-// ─── Cliente ───
+// ─── Cliente ──────────────────────────────────────────────────────────────────
 const handleEditClient = () => {
   dialogs.client.isNew = !orderData.client;
   dialogs.client.data = orderData.client || {};
@@ -589,7 +625,7 @@ const handleClientDialogClose = (savedClient) => {
   if (savedClient) orderData.client = savedClient;
 };
 
-// ─── Articoli ───
+// ─── Articoli ─────────────────────────────────────────────────────────────────
 const handleAddItem = () => {
   dialogs.item.isNew = true;
   dialogs.item.data = {};
@@ -606,7 +642,6 @@ const handleEditItem = (item, index) => {
 
 const handleItemDialogClose = async (savedItem) => {
   if (!savedItem) return;
-
   if (!orderData.client?._id) {
     $q.notify({
       type: "negative",
@@ -614,32 +649,21 @@ const handleItemDialogClose = async (savedItem) => {
     });
     return;
   }
-
   const editIndex = dialogs.item.index;
   if (dialogs.item.isNew) {
     orderData.items.push(savedItem);
   } else {
     orderData.items.splice(editIndex, 1, savedItem);
   }
-
   try {
+    // Item dialog usa direttamente PUT (mongoId esiste sempre a questo punto)
     saving.value = true;
-    const endpoint = isNew.value
-      ? "/api/orders"
-      : `/api/orders/${orderId.value}`;
-    const method = isNew.value ? "POST" : "PUT";
-
-    const result = await $fetch(endpoint, {
-      method,
+    busySave = true;
+    const data = await $fetch(`/api/orders/${mongoId.value}`, {
+      method: "PUT",
       body: buildBody(),
     });
-
-    if (result?.order?.items) orderData.items = [...result.order.items];
-    if (isNew.value && result?.order?._id) {
-      router.replace(`/orders/${result?.order?._id}`);
-      if (result?.order?.commNum) orderData.commNum = result?.order?.commNum;
-    }
-
+    if (data?.order?.items) orderData.items = [...data.order.items];
     $q.notify({
       type: "positive",
       message: dialogs.item.isNew
@@ -660,6 +684,7 @@ const handleItemDialogClose = async (savedItem) => {
     }
   } finally {
     saving.value = false;
+    busySave = false;
     dialogs.item.data = null;
     dialogs.item.index = null;
   }
@@ -677,45 +702,37 @@ const handleRemoveItemConfirm = (confirmed) => {
   dialogs.removeItem.pendingIndex = null;
 };
 
-// ─── Agente ───
+// ─── Agente ───────────────────────────────────────────────────────────────────
 const handleEditAgent = () => {
   dialogs.agent.isNew = true;
   dialogs.agent.data = {};
   dialogs.agent.show = true;
 };
-
-const handleAgentDialogClose = (savedAgent) => {
+const handleAgentDialogClose = async (savedAgent) => {
   if (savedAgent) {
-    orderData.orderData.agentId = savedAgent._id;
-    $q.notify({
-      type: "positive",
-      message: "Agente aggiornato",
-      timeout: 1500,
-    });
+    await orderDataSectionRef.value?.loadAgents()
+    orderData.orderData.agentId = savedAgent._id
+    $q.notify({ type: 'positive', message: 'Agente aggiornato', timeout: 1500 })
   }
-};
-
-// ─── Elimina commissione ───
+}
+// ─── Elimina commissione ──────────────────────────────────────────────────────
 const handleDelete = async () => {
   deleting.value = true;
   try {
-    const result = await $fetch(`/api/orders/${orderId.value}/can-delete`);
-
+    const result = await $fetch(`/api/orders/${mongoId.value}/can-delete`);
     if (!result.canDelete) {
-      const commNum = result.commNum || orderData.commNum;
       const count = result.invoiceCount;
       const label =
         count === 1 ? "1 fattura collegata" : `${count} fatture collegate`;
       $q.notify({
         type: "negative",
         icon: "block",
-        message: `Impossibile eliminare la commissione ${commNum}`,
+        message: `Impossibile eliminare la commissione ${orderData.commNum}`,
         caption: `Ha ${label}.`,
         timeout: 6000,
       });
       return;
     }
-
     dialogs.delete.show = true;
   } catch (err) {
     $q.notify({
@@ -730,10 +747,9 @@ const handleDelete = async () => {
 
 const handleDeleteConfirm = async (confirmed) => {
   if (!confirmed) return;
-
   deleting.value = true;
   try {
-    await $fetch(`/api/orders/${orderId.value}`, { method: "DELETE" });
+    await $fetch(`/api/orders/${mongoId.value}`, { method: "DELETE" });
     $q.notify({
       type: "positive",
       message: `Commissione ${orderData.commNum} eliminata`,
@@ -750,63 +766,34 @@ const handleDeleteConfirm = async (confirmed) => {
   }
 };
 
-// ─── Autosave ───
-const startAutosave = () => {
-  if (!autosaveEnabled) return;
-  stopAutosave();
-  autosaveTimer = setInterval(async () => {
-    const anyDialogOpen = Object.values(dialogs).some((d) => d.show);
-    if (saving.value || !orderData.commNum || anyDialogOpen) return;
-    await handleSave(true);
-    $q.notify({
-      message: "",
-      icon: "sync",
-      color: "grey-7",
-      position: "bottom-left",
-      timeout: 1500,
-    });
-  }, autosaveSeconds * 1000);
-};
-
-const stopAutosave = () => {
-  if (autosaveTimer) {
-    clearInterval(autosaveTimer);
-    autosaveTimer = null;
-  }
-};
-
-const handlePrint = async () => {
-  await handleSave(true);
-  router.push(`/orders/print/${orderId.value}`);
-};
-
-const removeGuard = router.beforeEach((to) => {
-  // Ferma sempre l'autosave quando si naviga via da questa pagina
-  stopAutosave();
-});
-
+// ─── Lifecycle ────────────────────────────────────────────────────────────────
 onMounted(async () => {
-  await loadOrder();
   await loadStatuses();
   statusOptions.value = allStatuses.value;
-  startAutosave();
+
+  if (mongoId.value) {
+    // Ordine esistente: carica i dati
+    await loadOrder();
+  } else {
+    // Nuovo ordine: crea subito il documento nel DB con POST
+    await handleSave(true);
+  }
+
+  startAutosave_local();
   await nextTick();
   quickNavRef.value?.focus();
 });
 
 onBeforeUnmount(() => {
   stopAutosave();
-  removeGuard(); // rimuove il guard per non lasciarlo attivo globalmente
 });
 
 onUnmounted(() => {
   stopAutosave();
-  removeGuard();
 });
 </script>
 
 <style scoped lang="scss">
-
 .order-number-badge {
   display: inline-flex;
   align-items: center;
@@ -839,7 +826,7 @@ onUnmounted(() => {
   z-index: 999;
   background: $sticky-menu;
   border-bottom: 1px solid $border;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 4px $dark-light;
   cursor: default;
 
   .header-content {
@@ -893,7 +880,9 @@ onUnmounted(() => {
 
   .header-center {
     display: flex;
+    align-items: center;
     justify-content: center;
+    gap: 4px;
   }
 
   .header-actions {
@@ -926,7 +915,6 @@ onUnmounted(() => {
     }
   }
 
-  // ── RESPONSIVE: sotto 750px ──
   @media (max-width: 750px) {
     .header-content {
       grid-template-columns: auto 1fr auto;
@@ -953,6 +941,10 @@ onUnmounted(() => {
   }
 }
 
+.print-btn {
+  color: $accent;
+}
+
 .header-spacer {
   height: 40px;
 }
@@ -964,21 +956,15 @@ onUnmounted(() => {
   gap: 16px;
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 
-
-
-  .header-left {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-
- 
-  }
-
-  .collapse-btn {
-    margin-right: 4px;
-  }
-
+.collapse-btn {
+  margin-right: 4px;
+}
 
 .top-section {
   display: grid;
@@ -1014,9 +1000,6 @@ onUnmounted(() => {
   .header-spacer {
     height: 48px;
   }
-}
-.print-btn {
-  color: $accent;
 }
 
 @media (max-width: 600px) {

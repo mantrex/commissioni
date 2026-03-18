@@ -1,5 +1,6 @@
 // server/api/orders/[id].put.js
 import Order from '~~/server/models/Order'
+import Client from "~~/server/models/Client"; 
 
 export default defineEventHandler(async (event) => {
   const orderId = getRouterParam(event, 'id')
@@ -41,7 +42,12 @@ export default defineEventHandler(async (event) => {
     if (body.client && body.client._id) {
       console.log('✏️ Aggiorno cliente:', body.client._id)
       order.clientId = body.client._id
+    
+      await Client.findByIdAndUpdate(body.client._id, {
+        vip: body.client.vip ?? false,
+      });
     }
+
 
     // Aggiorna spedizioni (filtra righe vuote)
     if (body.shipments) {

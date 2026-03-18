@@ -2,14 +2,14 @@ import Agent from '~~/server/models/Agent'
 
 export default defineEventHandler(async (event) => {
   try {
-    const agents = await Agent.find()
+    const agents = await Agent.find({deleted:{$ne:true}})
       .select('firstname lastname')
       .sort({ lastname: 1, firstname: 1 })
       .lean()
 
     const formatted = agents.map(agent => ({
       value: agent._id.toString(),
-      label: `${agent.lastname || ''} ${agent.firstname || ''}`.trim() || 'N/A'
+      label: `${agent.lastname || ''} - ${agent.firstname || ''}`.trim() || 'N/A'
     }))
 
     return {

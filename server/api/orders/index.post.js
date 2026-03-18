@@ -33,7 +33,7 @@ export default defineEventHandler(async (event) => {
       dueDate: body.orderData?.dueDate || null,
       clientId: body.client?._id || null,
       agentId: body.orderData?.agentId || null,
-      status: body.orderData?.status || "APERTA",
+      status: body.orderData?.status || null,
       shipments: (body.shipments || []).filter((s) => s.date || s.courier),
       notes: (body.notes || []).filter((n) => n.text),
       items: (body.items || []).map((item) => ({

@@ -109,6 +109,7 @@
           map-options
           outlined
           dense
+          clearable
           use-input
           @filter="filterStatuses">
           <template v-slot:prepend>
@@ -121,7 +122,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, watch, onMounted } from "vue";
 import { getConfigValue } from "#shared/config";
 
 const deadline = getConfigValue("DEADLINE", 30);
@@ -194,18 +195,23 @@ const filterAgents = (val, update) => {
   });
 };
 
+watch(() => data.value.date, (newDate) => {
+  if (!newDate) return
+  const d = new Date(newDate)
+  d.setDate(d.getDate() + deadline)
+  data.value.dueDate = d.toISOString().split('T')[0]
+})
+
+
 onMounted(async () => {
   await loadStatuses();
   statusOptions.value = allStatuses.value;
   await loadAgents();
 
-  if (!data.value.date) {
-    data.value.date = today;
-  }
-  if (!data.value.dueDate) {
-    data.value.dueDate = dueDateStr;
-  }
+
 });
+
+defineExpose({ loadAgents })
 </script>
 
 <style scoped lang="scss">
@@ -256,5 +262,8 @@ onMounted(async () => {
   .agent-edit-btn {
     margin-top: 4px;
   }
+}
+.is-important {
+  background:$important;
 }
 </style>

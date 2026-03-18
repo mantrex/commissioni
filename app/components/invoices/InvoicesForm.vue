@@ -138,6 +138,7 @@ import InvoiceItems from "~/components/invoice-edit/InvoiceItems.vue";
 import { getConfigValue, isConfigActive } from "#shared/config";
 import DeleteInvoiceDialog from "~/components/invoice-edit/DeleteInvoiceDialog.vue";
 import ComponentDialog from "~/components/common/ComponentDialog.vue";
+const { startAutosave, stopAutosave } = useGlobalAutosave('invoices')
 
 const props = defineProps({
   mode: {
@@ -164,7 +165,6 @@ const displayCommNum = computed(
 
 const autosaveEnabled = isConfigActive("AUTOSAVE_INVOICES");
 const autosaveSeconds = getConfigValue("AUTOSAVE_INVOICES");
-let autosaveTimer = null;
 
 const invoiceData = reactive({
   invoiceId: "",
@@ -464,19 +464,12 @@ const handleAutoSave = async () => {
   }
 };
 
-const startAutosave = () => {
-  if (!autosaveEnabled) return;
-  autosaveTimer = setInterval(() => {
-    if (!saving.value) handleAutoSave();
-  }, autosaveSeconds * 1000);
-};
-
-const stopAutosave = () => {
-  if (autosaveTimer) {
-    clearInterval(autosaveTimer);
-    autosaveTimer = null;
-  }
-};
+const startAutosave_local = () => {
+  if (!autosaveEnabled) return
+  startAutosave(() => {
+    if (!saving.value) handleAutoSave()
+  }, autosaveSeconds)
+}
 
 const handleDeleteConfirm = (confirmed) => {
   dialogs.delete.show = false;
@@ -488,7 +481,7 @@ const handleDeleteConfirm = (confirmed) => {
 
 onMounted(async () => {
   await loadInvoice();
-  startAutosave();
+  startAutosave_local();
 });
 
 onUnmounted(() => {
@@ -513,7 +506,7 @@ onUnmounted(() => {
   z-index: 999;
   background: $sticky-menu;
   border-bottom: 1px solid $border;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px $dark-light;
 
   .header-content {
     max-width: 1650px;

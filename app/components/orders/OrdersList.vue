@@ -235,7 +235,7 @@ onMounted(() => {
 .orders-page {
   display: flex;
   height: calc(100vh - 50px);
-  background: $bg-light;
+  background: $bg-list;
 }
 
 .sidebar {
