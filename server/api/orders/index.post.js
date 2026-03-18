@@ -29,7 +29,7 @@ export default defineEventHandler(async (event) => {
     // Prepara dati ordine
     const orderData = {
       commNum,
-      date: body.orderData?.date || new Date(),
+      date: body.orderData?.date || null,
       dueDate: body.orderData?.dueDate || null,
       clientId: body.client?._id || null,
       agentId: body.orderData?.agentId || null,

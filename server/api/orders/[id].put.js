@@ -35,7 +35,7 @@ export default defineEventHandler(async (event) => {
       order.date = body.orderData.date || order.date
       order.dueDate = body.orderData.dueDate
       order.agentId = body.orderData.agentId
-      order.status = body.orderData.status || order.status
+      order.status = body.orderData.status ?? order.status
     }
 
     // Aggiorna cliente

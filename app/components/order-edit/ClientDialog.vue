@@ -1,6 +1,6 @@
 <template>
   <div class="client-dialog-content">
-    <q-form @submit.prevent="handleSave" class="client-form">
+    <q-form @submit.prevent="handleSave" class="client-form" autocomplete="off">
       <!-- Autocomplete per selezionare cliente esistente o nuovo -->
       <div class="form-section">
         <div class="section-title">Seleziona Cliente</div>
@@ -33,17 +33,32 @@
       <div class="form-section">
         <div class="section-title">Dati Anagrafici</div>
 
-        <!-- FIX: Cognome e Nome non più obbligatori -->
         <div class="row q-col-gutter-sm">
           <div class="col-12 col-sm-6">
-            <q-input v-model="localClient.lastname" label="Cognome" outlined dense />
+            <q-input
+              v-model="localClient.lastname"
+              label="Cognome"
+              outlined dense
+              :input-attrs="{ autocomplete: 'new-password' }"
+              @update:model-value="v => localClient.lastname = v ? v.charAt(0).toUpperCase() + v.slice(1) : v" />
           </div>
           <div class="col-12 col-sm-6">
-            <q-input v-model="localClient.firstname" label="Nome" outlined dense />
+            <q-input
+              v-model="localClient.firstname"
+              label="Nome"
+              outlined dense
+              :input-attrs="{ autocomplete: 'new-password' }"
+              @update:model-value="v => localClient.firstname = v ? v.charAt(0).toUpperCase() + v.slice(1) : v" />
           </div>
         </div>
 
-        <q-input v-model="localClient.company" label="Ditta" outlined dense class="q-mt-sm" />
+        <q-input
+          v-model="localClient.company"
+          label="Ditta"
+          outlined dense
+          class="q-mt-sm"
+          :input-attrs="{ autocomplete: 'new-password' }"
+          @update:model-value="v => localClient.company = v ? v.charAt(0).toUpperCase() + v.slice(1) : v" />
 
         <div class="q-mt-sm">
           <q-checkbox v-model="localClient.vip" label="Cliente VIP" dense />
@@ -56,23 +71,48 @@
       <div class="form-section">
         <div class="section-title">Indirizzo</div>
 
-        <q-input v-model="localClient.address" label="Indirizzo" outlined dense />
+        <q-input
+          v-model="localClient.address"
+          label="Indirizzo"
+          outlined dense
+          :input-attrs="{ autocomplete: 'new-password' }"
+          @update:model-value="v => localClient.address = v ? v.charAt(0).toUpperCase() + v.slice(1) : v" />
 
         <div class="row q-col-gutter-sm q-mt-sm">
           <div class="col-12 col-sm-4">
-            <q-input v-model="localClient.cap" label="CAP" outlined dense />
+            <q-input
+              v-model="localClient.cap"
+              label="CAP"
+              outlined dense
+              :input-attrs="{ autocomplete: 'new-password' }"
+              @update:model-value="v => localClient.cap = v ? v.charAt(0).toUpperCase() + v.slice(1) : v" />
           </div>
           <div class="col-12 col-sm-8">
-            <q-input v-model="localClient.city" label="Città" outlined dense />
+            <q-input
+              v-model="localClient.city"
+              label="Città"
+              outlined dense
+              :input-attrs="{ autocomplete: 'new-password' }"
+              @update:model-value="v => localClient.city = v ? v.charAt(0).toUpperCase() + v.slice(1) : v" />
           </div>
         </div>
 
         <div class="row q-col-gutter-sm q-mt-sm">
           <div class="col-12 col-sm-6">
-            <q-input v-model="localClient.region" label="Provincia" outlined dense />
+            <q-input
+              v-model="localClient.region"
+              label="Provincia"
+              outlined dense
+              :input-attrs="{ autocomplete: 'new-password' }"
+              @update:model-value="v => localClient.region = v ? v.charAt(0).toUpperCase() + v.slice(1) : v" />
           </div>
           <div class="col-12 col-sm-6">
-            <q-input v-model="localClient.state" label="Paese" outlined dense />
+            <q-input
+              v-model="localClient.state"
+              label="Paese"
+              outlined dense
+              :input-attrs="{ autocomplete: 'new-password' }"
+              @update:model-value="v => localClient.state = v ? v.charAt(0).toUpperCase() + v.slice(1) : v" />
           </div>
         </div>
       </div>
@@ -85,21 +125,40 @@
 
         <div class="row q-col-gutter-sm">
           <div class="col-12 col-sm-6">
-            <q-input v-model="localClient.tel" label="Telefono" outlined dense />
+            <q-input
+              v-model="localClient.tel"
+              label="Telefono"
+              outlined dense
+              :input-attrs="{ autocomplete: 'new-password' }" />
           </div>
           <div class="col-12 col-sm-6">
-            <q-input v-model="localClient.fax" label="Fax" outlined dense />
+            <q-input
+              v-model="localClient.fax"
+              label="Fax"
+              outlined dense
+              :input-attrs="{ autocomplete: 'new-password' }" />
           </div>
         </div>
 
-        <q-input v-model="localClient.email" label="Email" type="email" outlined dense class="q-mt-sm" />
+        <q-input
+          v-model="localClient.email"
+          label="Email"
+          type="email"
+          outlined dense
+          class="q-mt-sm"
+          :input-attrs="{ autocomplete: 'new-password' }" />
 
-        <q-input v-model="localClient.piva" label="P.IVA" outlined dense class="q-mt-sm" />
+        <q-input
+          v-model="localClient.piva"
+          label="P.IVA"
+          outlined dense
+          class="q-mt-sm"
+          :input-attrs="{ autocomplete: 'new-password' }"
+          @update:model-value="v => localClient.piva = v ? v.toUpperCase() : v" />
       </div>
 
       <!-- Azioni -->
       <div class="form-actions">
-        <q-btn flat label="Annulla" color="negative" @click="emit('close')" />
         <q-btn type="submit" label="Salva" color="primary" unelevated :loading="saving" />
       </div>
     </q-form>

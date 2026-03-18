@@ -424,13 +424,13 @@ const loadOrder = async () => {
     orderData.commNum = order.commNum || "";
     orderData.client = order.clientId || null;
     orderData.orderData.date = order.date
-      ? new Date(order.date).toISOString().split("T")[0]
-      : new Date().toISOString().split("T")[0];
+  ? new Date(order.date).toISOString().split("T")[0]
+  : null;
     orderData.orderData.dueDate = order.dueDate
       ? new Date(order.dueDate).toISOString().split("T")[0]
       : null;
     orderData.orderData.agentId = order.agentId?._id || null;
-    orderData.orderData.status = order.status || "APERTA";
+    orderData.orderData.status = order.status || null;
     if (order.shipments?.length > 0) {
       orderData.shipments = order.shipments.map((s) => ({
         date: s.date ? new Date(s.date).toISOString().split("T")[0] : null,

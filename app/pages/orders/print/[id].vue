@@ -65,8 +65,9 @@
           <div
             v-if="order.clientId?.city || order.clientId?.state"
             class="p-client-line">
-            <span v-if="order.clientId?.cap">{{ order.clientId.cap }} </span>
+            <span v-if="order.clientId?.cap">{{ order.clientId.cap }}&nbsp;- </span>
             <span v-if="order.clientId?.city">{{ order.clientId.city }}</span>
+            <span v-if="order.clientId?.region">&nbsp;({{ order.clientId.region }})</span>
             <span v-if="order.clientId?.state">
               — {{ order.clientId.state }}</span
             >

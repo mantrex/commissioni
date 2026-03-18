@@ -74,15 +74,54 @@
             </div>
 
             <div class="financial-data">
-              <q-input v-model.number="financial.ca" label="C/A" type="number" outlined dense class="financial-input bg-body" />
-              <q-input v-model.number="financial.rd" label="RD" type="number" outlined dense class="financial-input bg-body" />
-              <q-input v-model.number="financial.ric" label="Ric." type="number" outlined dense
-                class="financial-input bg-body" />
-              <q-input v-model.number="financial.balance" label="Saldo" type="number" outlined dense
-                class="financial-input financial-input--readonly" readonly />
-                <div class="financial-data-separator" ></div>
-              <q-input v-model.number="financial.pay" label="Pag." type="number" outlined dense
-                class="financial-input bg-body" />
+              <q-input
+                :model-value="focusedField === 'ca' ? rawInput.ca : formatEuro(financial.ca)"
+                label="C/A"
+                outlined dense
+                class="financial-input bg-body"
+                inputmode="decimal"
+                @focus="onFocus('ca')"
+                @blur="onBlur('ca')"
+                @update:model-value="v => rawInput.ca = v" />
+
+              <q-input
+                :model-value="focusedField === 'rd' ? rawInput.rd : formatEuro(financial.rd)"
+                label="RD"
+                outlined dense
+                class="financial-input bg-body"
+                inputmode="decimal"
+                @focus="onFocus('rd')"
+                @blur="onBlur('rd')"
+                @update:model-value="v => rawInput.rd = v" />
+
+              <q-input
+                :model-value="focusedField === 'ric' ? rawInput.ric : formatEuro(financial.ric)"
+                label="Ric."
+                outlined dense
+                class="financial-input bg-body"
+                inputmode="decimal"
+                @focus="onFocus('ric')"
+                @blur="onBlur('ric')"
+                @update:model-value="v => rawInput.ric = v" />
+
+              <q-input
+                :model-value="formatEuro(financial.balance)"
+                label="Saldo"
+                outlined dense
+                class="financial-input financial-input--readonly"
+                readonly />
+
+              <div class="financial-data-separator"></div>
+
+              <q-input
+                :model-value="focusedField === 'pay' ? rawInput.pay : formatEuro(financial.pay)"
+                label="Pag."
+                outlined dense
+                class="financial-input bg-body"
+                inputmode="decimal"
+                @focus="onFocus('pay')"
+                @blur="onBlur('pay')"
+                @update:model-value="v => rawInput.pay = v" />
             </div>
           </div>
         </div>
@@ -92,10 +131,9 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, reactive, watch } from 'vue'
 import { useQuasar } from 'quasar'
 
-// ✅ USA defineModel per tutti e tre i modelli
 const shipments = defineModel('shipments', {
   type: Array,
   default: () => []
@@ -120,20 +158,60 @@ const financial = defineModel('financial', {
 const $q = useQuasar()
 const collapsed = ref(false)
 
-// ✅ Gestione corrieri - Modifica diretta senza watch
+// ─── Formattazione euro ───────────────────────────────────────────────────────
+const formatEuro = (value) => {
+  const n = parseFloat(value)
+  if (isNaN(n)) return ''
+  return new Intl.NumberFormat('it-IT', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(n)
+}
+
+const parseEuro = (value) => {
+  if (value === null || value === undefined || value === '') return 0
+  // Rimuove separatori migliaia (.) e sostituisce virgola decimale con punto
+  const cleaned = String(value).replace(/\./g, '').replace(',', '.')
+  const n = parseFloat(cleaned)
+  return isNaN(n) ? 0 : n
+}
+
+// Campo attualmente in focus e relativo raw input
+const focusedField = ref(null)
+const rawInput = reactive({ ca: '', rd: '', ric: '', pay: '' })
+
+const onFocus = (field) => {
+  focusedField.value = field
+  // Mostra il numero grezzo (con virgola) per l'editing
+  const val = financial.value[field]
+  rawInput[field] = val ? String(val).replace('.', ',') : ''
+}
+
+const onBlur = (field) => {
+  const parsed = parseEuro(rawInput[field])
+  financial.value[field] = parsed
+  focusedField.value = null
+}
+
+// ─── Calcolo saldo automatico ─────────────────────────────────────────────────
+watch(
+  () => [financial.value.ca, financial.value.rd, financial.value.ric],
+  ([ca, rd, ric]) => {
+    financial.value.balance = (ric || 0) - ((ca || 0) + (rd || 0))
+  },
+  { immediate: true }
+)
+
+// ─── Corrieri ─────────────────────────────────────────────────────────────────
 const addShipment = () => {
   shipments.value.push({ date: null, courier: '' })
 }
 
 const removeShipment = (index) => {
   if (shipments.value.length <= 1) {
-    $q.notify({
-      type: 'warning',
-      message: 'Deve rimanere almeno un corriere'
-    })
+    $q.notify({ type: 'warning', message: 'Deve rimanere almeno un corriere' })
     return
   }
-
   $q.dialog({
     title: 'Conferma',
     message: 'Vuoi rimuovere questo corriere?',
@@ -144,20 +222,16 @@ const removeShipment = (index) => {
   })
 }
 
-// ✅ Gestione note - Modifica diretta senza watch
+// ─── Note ─────────────────────────────────────────────────────────────────────
 const addNote = () => {
   notes.value.push({ text: '' })
 }
 
 const removeNote = (index) => {
   if (notes.value.length <= 1) {
-    $q.notify({
-      type: 'warning',
-      message: 'Deve rimanere almeno una nota'
-    })
+    $q.notify({ type: 'warning', message: 'Deve rimanere almeno una nota' })
     return
   }
-
   $q.dialog({
     title: 'Conferma',
     message: 'Vuoi rimuovere questa nota?',
@@ -167,32 +241,19 @@ const removeNote = (index) => {
     notes.value.splice(index, 1)
   })
 }
-
-watch(
-  () => [financial.value.ca, financial.value.rd, financial.value.ric],
-  ([ca, rd, ric]) => {
-    financial.value.balance = (ric || 0) - ((ca || 0) + (rd || 0))
-  },{immediate:true}
-)
-
 </script>
 
 <style scoped lang="scss">
-
-
-
   .header-left {
     display: flex;
     align-items: center;
     gap: 8px;
-
     color: $text-primary;
   }
 
   .collapse-btn {
     margin-right: 4px;
   }
-
 
 .section-content {
   padding: 16px;
@@ -219,7 +280,6 @@ watch(
   align-items: center;
   justify-content: space-between;
   padding: 8px 12px;
-  
 
   .header-left {
     display: flex;
@@ -278,13 +338,14 @@ watch(
     min-height: 50px;
   }
 }
+
 .financial-data-wrapper {
-  border:1px solid $border;
-  padding:8px;
-  border-radius:4px;
-  background:$bg-light2;
-  width:auto;
-  align-self:start;
+  border: 1px solid $border;
+  padding: 8px;
+  border-radius: 4px;
+  background: $bg-light2;
+  width: auto;
+  align-self: start;
 }
 
 .financial-data {
@@ -299,8 +360,9 @@ watch(
     color: $text-secondary;
   }
 }
+
 .financial-data-separator {
-  border-bottom:1px solid $border;
+  border-bottom: 1px solid $border;
 }
 
 @media (max-width: 768px) {

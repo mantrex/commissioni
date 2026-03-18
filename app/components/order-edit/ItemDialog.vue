@@ -59,7 +59,6 @@
 
       <!-- Azioni -->
       <div class="form-actions">
-        <q-btn flat label="Annulla" color="negative" @click="emit('close')" />
         <q-btn type="submit" :label="isEditMode ? 'Salva' : 'Aggiungi'" color="primary" unelevated />
       </div>
     </q-form>
@@ -212,6 +211,7 @@ const handleProductSelect = (option) => {
     localItem.value.productId = option.product._id
     localItem.value.code = option.product.code || ''
     localItem.value.description = option.product.name || ''
+    localItem.value.note = option.product.details || ''
   }
 }
 
