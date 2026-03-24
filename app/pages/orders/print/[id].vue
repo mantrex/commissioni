@@ -78,6 +78,9 @@
           <div v-if="order.clientId?.piva" class="p-client-line">
             P.IVA: {{ order.clientId.piva }}
           </div>
+          <div v-if="order.clientId?.email" class="p-client-line">
+            EMAIL: {{ order.clientId.email }}
+          </div>
           <div v-if="order.clientId?.vip" class="p-vip-badge">★ VIP</div>
         </div>
 

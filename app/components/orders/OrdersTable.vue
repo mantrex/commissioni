@@ -162,7 +162,8 @@ const columns = [
     label: 'Comm.',
     align: 'left',
     field: 'commNum',
-    sortable: true
+    sortable: true,
+    rawSort: (a, b) => parseInt(a) - parseInt(b)
   },
   {
     name: 'date',

@@ -19,9 +19,11 @@ export default defineEventHandler(async (event) => {
     const skip = (page - 1) * limit;
 
     // Sorting
+    // Se si ordina per commNum, usiamo commNumInt (numerico) per un sort corretto
     const sortBy = query.sortBy || "dueDate";
     const sortDesc = query.sortDesc === "true";
-    const sort = { [sortBy]: sortDesc ? -1 : 1 };
+    const effectiveSortBy = sortBy === "commNum" ? "commNumInt" : sortBy;
+    const sort = { [effectiveSortBy]: sortDesc ? -1 : 1 };
 
     // Costruisci filtri
     const filters = {};
@@ -53,11 +55,11 @@ export default defineEventHandler(async (event) => {
       filters.dueDate = { $gt: new Date() };
     }
 
-   if (query.balanceOpen === "true") {
-     filters.balance = { $ne: 0 };
-   } else if (query.balanceClosed === "true") {
-     filters.balance = 0;
-   }
+    if (query.balanceOpen === "true") {
+      filters.balance = { $ne: 0 };
+    } else if (query.balanceClosed === "true") {
+      filters.balance = 0;
+    }
 
     // Filtri avanzati cliente (tramite populate)
     const populateMatch = {};
@@ -119,18 +121,17 @@ export default defineEventHandler(async (event) => {
     }
 
     // Esegui query con populate
-    let ordersQuery = Order.find(filters)
-      .sort(sort)
-      .skip(skip)
-      .limit(limit)
-      .populate("clientId", "firstname lastname company city state vip")
-      .populate("agentId", "firstname lastname")
-      .lean();
-
     const [orders, total] = await Promise.all([
-      ordersQuery,
+      Order.find(filters)
+        .sort(sort)
+        .skip(skip)
+        .limit(limit)
+        .populate("clientId", "firstname lastname company city state vip")
+        .populate("agentId", "firstname lastname")
+        .lean(),
       Order.countDocuments(filters),
     ]);
+
     const orderCommNums = orders.map((o) => o.commNum).filter(Boolean);
     const invoices = await Invoice.find(
       { commNum: { $in: orderCommNums } },
@@ -140,7 +141,7 @@ export default defineEventHandler(async (event) => {
     const invoicedCommNums = new Set(invoices.map((inv) => inv.commNum));
 
     let filteredOrders = orders;
-    let filteredTotal = total; // ✅ NUOVO: mantieni il totale originale
+    let filteredTotal = total;
 
     if (Object.keys(populateMatch).length > 0) {
       filteredOrders = orders.filter((order) => {
@@ -162,16 +163,11 @@ export default defineEventHandler(async (event) => {
         return true;
       });
 
-      // Quando filtriamo post-populate, ricalcola il totale
-      // Questo è necessario perché countDocuments() non tiene conto dei filtri su campi popolati
       if (filteredOrders.length < orders.length) {
-        // Se abbiamo filtrato qualcosa, il totale potenziale è diverso
-        // Dobbiamo fare un conteggio separato considerando i filtri cliente
-        // Per ora usiamo la lunghezza filtrata come approssimazione
-        // In una implementazione production, dovresti fare una query separata
         filteredTotal = filteredOrders.length;
       }
     }
+
     // Arricchisci con info stato
     const enrichedOrders = filteredOrders.map((order) => ({
       ...order,

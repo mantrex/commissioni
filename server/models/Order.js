@@ -66,6 +66,10 @@ const orderSchema = new mongoose.Schema(
       unique: true,
       trim: true,
     },
+    commNumInt: {
+      type: Number,
+      default: 0,
+    },
     date: {
       type: Date,
     },
@@ -127,15 +131,21 @@ const orderSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
-    deletedAt: { 
-      type: Date, 
-      default: null 
+    deletedAt: {
+      type: Date,
+      default: null,
     },
   },
   {
     timestamps: true,
   },
 );
+
+orderSchema.pre("save", function () {
+  const n = parseInt(this.commNum);
+  this.commNumInt = isNaN(n) ? 0 : n;
+});
+ 
 
 // Index per ricerche comuni
 orderSchema.index({ clientId: 1 });

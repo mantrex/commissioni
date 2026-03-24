@@ -202,6 +202,15 @@ watch(() => data.value.date, (newDate) => {
   data.value.dueDate = d.toISOString().split('T')[0]
 })
 
+const STATUSES_NO_DUEDATE = ['SPEDITO', 'ANNULLATA', 'ARCHIVIO', 'STORNO']
+
+watch(() => data.value.status, (newStatus) => {
+  if (STATUSES_NO_DUEDATE.includes(newStatus)) {
+    setTimeout(()=>{
+      data.value.dueDate = null
+    },30)
+  }
+})
 
 onMounted(async () => {
   await loadStatuses();

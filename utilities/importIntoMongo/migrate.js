@@ -1,6 +1,15 @@
 // /var/www/develop/commissioni/utilities/importIntoMongo/migrate.js
 import { log, parseAgentName } from "./helpers.js";
 
+// Stati per cui la data di scadenza deve essere azzerata
+const STATUSES_NO_DUEDATE = ["SPEDITO", "ANNULLATA", "ARCHIVIO", "STORNO"];
+
+// Restituisce true se IDComm è puramente numerico (es. "00001234")
+function isNumericCommNum(id) {
+  if (!id || typeof id !== "string") return false;
+  return /^\d+$/.test(id.trim());
+}
+
 export async function migrateAgents(mysqlConn, Agent, stats) {
   log.info("Migrating agents...");
 
@@ -150,6 +159,13 @@ export async function migrateOrders(
 
     for (const row of rows) {
       try {
+        // ✅ Punto 1: salta commissioni con IDComm non numerico (es. "OB123", "AB...")
+        if (!isNumericCommNum(row.IDComm)) {
+          log.warn(`Skipping non-numeric order ${row.IDComm}`);
+          stats.orders.failed++;
+          continue;
+        }
+
         const clientId = clientsMap.get(row.IDCliente);
         if (!clientId) {
           log.warn(`Client not found for order ${row.IDComm}, skipping`);
@@ -218,13 +234,20 @@ export async function migrateOrders(
           }
         }
 
+        // ✅ Punto 3: azzera dueDate per stati terminali
+        const status = row.PosPratica || "";
+        const dueDate = STATUSES_NO_DUEDATE.includes(status)
+          ? null
+          : row.DataScad || null;
+
         const order = await Order.create({
           commNum: row.IDComm,
+          commNumInt: parseInt(row.IDComm) || 0,
           date: row.DataComm || new Date(),
-          dueDate: row.DataScad || null,
+          dueDate,
           clientId,
           agentId,
-          status: row.PosPratica || "",
+          status,
           shipments,
           notes,
           items,
@@ -257,6 +280,8 @@ export async function migrateOrders(
   }
 }
 
+// utilities/importIntoMongo/migrate.js
+
 export async function migrateInvoices(
   mysqlConn,
   clientsMap,
@@ -277,6 +302,15 @@ export async function migrateInvoices(
 
     for (const row of rows) {
       try {
+        // ✅ Punto 1: salta fatture collegate a commissioni non numeriche
+        if (row.IDComm && !isNumericCommNum(row.IDComm)) {
+          log.warn(
+            `Skipping invoice ${row.IDFattura} linked to non-numeric order ${row.IDComm}`,
+          );
+          stats.invoices.failed++;
+          continue;
+        }
+
         const clientId = clientsMap.get(row.IDCliente) || null;
         const client = {
           clientId,
@@ -416,21 +450,6 @@ export async function migrateInvoices(
               }
             : {};
 
-        // ✅ Ricalcola totali dagli items (Imponibile/TotFattura sono NULL in Access)
-        const taxable =
-          Math.round(
-            items.reduce(
-              (sum, item) => sum + item.quantity * item.unitPrice,
-              0,
-            ) * 100,
-          ) / 100;
-        const hasVat = row["IVAsi-no"] === 1;
-        const vatRate = row.IVA || 0;
-        const vatAmount = hasVat
-          ? Math.round(((taxable * vatRate) / 100) * 100) / 100
-          : 0;
-        const total = Math.round((taxable + vatAmount) * 100) / 100;
-
         await Invoice.create({
           invoiceId: row.IDFattura,
           invoiceDate,
@@ -439,11 +458,11 @@ export async function migrateInvoices(
           client,
           receipts,
           items,
-          taxable,
-          hasVat,
-          vatRate,
-          vatAmount,
-          total,
+          taxable: row.Imponibile || 0,
+          hasVat: row["IVAsi-no"] === 1,
+          vatRate: row.IVA || 0,
+          vatAmount: row.ImportoIVA || 0,
+          total: row.TotFattura || 0,
           deposit: row.Deposito || 0,
           cod: row.Cod || 0,
           payment: row.Pagamento || "",
