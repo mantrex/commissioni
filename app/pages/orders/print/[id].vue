@@ -75,6 +75,9 @@
           <div v-if="order.clientId?.tel" class="p-client-line">
             Tel: {{ order.clientId.tel }}
           </div>
+          <div v-if="order.clientId?.fax" class="p-client-line">
+            Fax: {{ order.clientId.fax }}
+          </div>
           <div v-if="order.clientId?.piva" class="p-client-line">
             P.IVA: {{ order.clientId.piva }}
           </div>

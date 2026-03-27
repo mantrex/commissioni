@@ -6,6 +6,7 @@ export default defineEventHandler(async (event) => {
   try {
     const query = getQuery(event);
     const filters = {};
+    filters.deleterAt = null;
     const populateMatch = {};
 
     if (query.commNum)
@@ -16,11 +17,12 @@ export default defineEventHandler(async (event) => {
     if (query.expiredDays) {
       const cutoff = new Date();
       cutoff.setDate(cutoff.getDate() - parseInt(query.expiredDays));
-      filters.dueDate = { $lte: cutoff };
+      filters.date = { $lte: cutoff };
+      filters.dueDate = { $ne: null };
     } else if (query.notExpired === "true") {
       filters.dueDate = { $gt: new Date() };
     }
-
+    
     if (query.dateFrom || query.dateTo) {
       filters.date = {};
       if (query.dateFrom) filters.date.$gte = new Date(query.dateFrom);

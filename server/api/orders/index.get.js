@@ -2,7 +2,6 @@ import Order from "~~/server/models/Order";
 import Invoice from "~~/server/models/Invoice";
 import "~~/server/models/Client";
 import "~~/server/models/Agent";
-
 import {
   isValidStatus,
   getStatusLabel,
@@ -13,163 +12,135 @@ export default defineEventHandler(async (event) => {
   try {
     const query = getQuery(event);
 
-    // Parametri paginazione
     const page = parseInt(query.page) || 1;
     const limit = parseInt(query.limit) || 25;
     const skip = (page - 1) * limit;
 
-    // Sorting
-    // Se si ordina per commNum, usiamo commNumInt (numerico) per un sort corretto
     const sortBy = query.sortBy || "dueDate";
     const sortDesc = query.sortDesc === "true";
     const effectiveSortBy = sortBy === "commNum" ? "commNumInt" : sortBy;
     const sort = { [effectiveSortBy]: sortDesc ? -1 : 1 };
 
-    // Costruisci filtri
-    const filters = {};
-    filters.deletedAt = null;
+    // ── Filtri su campi diretti dell'ordine ──────────────────────────────────
+    const match = { deletedAt: null };
 
-    // Filtro per numero commissione
-    if (query.commNum) {
-      filters.commNum = { $regex: query.commNum, $options: "i" };
-    }
+    if (query.commNum) match.commNum = { $regex: query.commNum, $options: "i" };
 
-    // Filtro per stato (validato)
     if (query.status) {
-      if (!isValidStatus(query.status)) {
+      if (!isValidStatus(query.status))
         throw createError({
           statusCode: 400,
           message: `Stato non valido: ${query.status}`,
         });
-      }
-      filters.status = query.status;
+      match.status = query.status;
     }
 
-    // Filtro scadenza
     if (query.expiredDays) {
-      const daysAgo = parseInt(query.expiredDays);
-      const cutoffDate = new Date();
-      cutoffDate.setDate(cutoffDate.getDate() - daysAgo);
-      filters.dueDate = { $lte: cutoffDate };
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - parseInt(query.expiredDays));
+      match.date = { $lte: cutoff };
+      match.dueDate = { $ne: null };
     } else if (query.notExpired === "true") {
-      filters.dueDate = { $gt: new Date() };
+      match.dueDate = { $gt: new Date() };
     }
 
-    if (query.balanceOpen === "true") {
-      filters.balance = { $ne: 0 };
-    } else if (query.balanceClosed === "true") {
-      filters.balance = 0;
+    if (query.balanceOpen === "true") match.balance = { $ne: 0 };
+    else if (query.balanceClosed === "true") match.balance = 0;
+
+    if (query.agentId) match.agentId = query.agentId;
+
+    if (query.dateFrom || query.dateTo) {
+      match.date = {};
+      if (query.dateFrom) match.date.$gte = new Date(query.dateFrom);
+      if (query.dateTo) match.date.$lte = new Date(query.dateTo);
     }
 
-    // Filtri avanzati cliente (tramite populate)
-    const populateMatch = {};
-    if (query.clientLastname) {
-      populateMatch["clientId.lastname"] = {
+    if (query.dueDateFrom || query.dueDateTo) {
+      if (!match.dueDate) match.dueDate = {};
+      if (query.dueDateFrom) match.dueDate.$gte = new Date(query.dueDateFrom);
+      if (query.dueDateTo) match.dueDate.$lte = new Date(query.dueDateTo);
+    }
+
+    if (query.productCode) {
+      const Product = (await import("~~/server/models/Product")).default;
+      const products = await Product.find(
+        { code: { $regex: query.productCode, $options: "i" } },
+        { _id: 1 },
+      ).lean();
+      if (products.length === 0)
+        return { success: true, orders: [], total: 0, page, pages: 0 };
+      match["items.productId"] = { $in: products.map((p) => p._id) };
+    }
+
+    // ── Filtri su campi del cliente (post-lookup) ────────────────────────────
+    const clientMatch = {};
+    if (query.clientLastname)
+      clientMatch["clientId.lastname"] = {
         $regex: query.clientLastname,
         $options: "i",
       };
-    }
-    if (query.clientFirstname) {
-      populateMatch["clientId.firstname"] = {
+    if (query.clientFirstname)
+      clientMatch["clientId.firstname"] = {
         $regex: query.clientFirstname,
         $options: "i",
       };
-    }
-    if (query.clientCity) {
-      populateMatch["clientId.city"] = {
+    if (query.clientCity)
+      clientMatch["clientId.city"] = {
         $regex: query.clientCity,
         $options: "i",
       };
-    }
-    if (query.clientCountry) {
-      populateMatch["clientId.state"] = {
+    if (query.clientCountry)
+      clientMatch["clientId.state"] = {
         $regex: query.clientCountry,
         $options: "i",
       };
-    }
-    if (query.clientVip !== undefined) {
-      populateMatch["clientId.vip"] = query.clientVip === "true";
-    }
+    if (query.clientVip !== undefined)
+      clientMatch["clientId.vip"] = query.clientVip === "true";
 
-    // Filtro agente
-    if (query.agentId) {
-      filters.agentId = query.agentId;
-    }
+    // ── Aggregation pipeline ─────────────────────────────────────────────────
+    const pipeline = [
+      { $match: match },
+      {
+        $lookup: {
+          from: "clients",
+          localField: "clientId",
+          foreignField: "_id",
+          as: "clientId",
+        },
+      },
+      { $unwind: { path: "$clientId", preserveNullAndEmptyArrays: true } },
+      ...(Object.keys(clientMatch).length > 0 ? [{ $match: clientMatch }] : []),
+      {
+        $lookup: {
+          from: "agents",
+          localField: "agentId",
+          foreignField: "_id",
+          as: "agentId",
+        },
+      },
+      { $unwind: { path: "$agentId", preserveNullAndEmptyArrays: true } },
+      { $sort: sort },
+      {
+        $facet: {
+          orders: [{ $skip: skip }, { $limit: limit }],
+          total: [{ $count: "count" }],
+        },
+      },
+    ];
 
-    // Filtro prodotto (cerca negli items)
-    if (query.productCode) {
-      // TODO: implementare ricerca nei products degli items
-      // Per ora skippiamo, serve una query più complessa
-    }
+    const [result] = await Order.aggregate(pipeline);
+    const orders = result.orders;
+    const total = result.total[0]?.count || 0;
 
-    // Filtri date commissione
-    if (query.dateFrom || query.dateTo) {
-      filters.date = {};
-      if (query.dateFrom) filters.date.$gte = new Date(query.dateFrom);
-      if (query.dateTo) filters.date.$lte = new Date(query.dateTo);
-    }
-
-    // Filtri date scadenza
-    if (query.dueDateFrom || query.dueDateTo) {
-      if (!filters.dueDate) filters.dueDate = {};
-      if (query.dueDateFrom) {
-        filters.dueDate.$gte = new Date(query.dueDateFrom);
-      }
-      if (query.dueDateTo) {
-        filters.dueDate.$lte = new Date(query.dueDateTo);
-      }
-    }
-
-    // Esegui query con populate
-    const [orders, total] = await Promise.all([
-      Order.find(filters)
-        .sort(sort)
-        .skip(skip)
-        .limit(limit)
-        .populate("clientId", "firstname lastname company city state vip")
-        .populate("agentId", "firstname lastname")
-        .lean(),
-      Order.countDocuments(filters),
-    ]);
-
+    // ── Arricchisci con info fatture e stato ─────────────────────────────────
     const orderCommNums = orders.map((o) => o.commNum).filter(Boolean);
     const invoices = await Invoice.find(
       { commNum: { $in: orderCommNums } },
       { commNum: 1 },
     ).lean();
-
     const invoicedCommNums = new Set(invoices.map((inv) => inv.commNum));
 
-    let filteredOrders = orders;
-    let filteredTotal = total;
-
-    if (Object.keys(populateMatch).length > 0) {
-      filteredOrders = orders.filter((order) => {
-        for (const [key, condition] of Object.entries(populateMatch)) {
-          const field = key.split(".")[1];
-          const value = order.clientId?.[field];
-
-          if (condition.$regex) {
-            if (
-              !value ||
-              !new RegExp(condition.$regex, condition.$options).test(value)
-            ) {
-              return false;
-            }
-          } else if (condition !== value) {
-            return false;
-          }
-        }
-        return true;
-      });
-
-      if (filteredOrders.length < orders.length) {
-        filteredTotal = filteredOrders.length;
-      }
-    }
-
-    // Arricchisci con info stato
-    const enrichedOrders = filteredOrders.map((order) => ({
+    const enrichedOrders = orders.map((order) => ({
       ...order,
       hasInvoice: invoicedCommNums.has(order.commNum),
       statusInfo: {
@@ -182,17 +153,13 @@ export default defineEventHandler(async (event) => {
     return {
       success: true,
       orders: enrichedOrders,
-      total: filteredTotal,
+      total,
       page,
-      pages: Math.ceil(filteredOrders.length / limit),
+      pages: Math.ceil(total / limit),
     };
   } catch (error) {
     console.error("Errore API orders:", error);
-
-    if (error.statusCode === 400) {
-      throw error;
-    }
-
+    if (error.statusCode === 400) throw error;
     throw createError({
       statusCode: 500,
       message: "Errore nel recupero degli ordini",

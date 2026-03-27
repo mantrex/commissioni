@@ -64,8 +64,11 @@
         <div class="col-6">
           <q-input v-model="client.state" label="Paese" outlined dense readonly class="bg-readonly" />
         </div>
-        <div class="col-6">
+        <div class="col-3">
           <q-input v-model="client.tel" label="Telefono" outlined dense readonly class="bg-readonly" />
+        </div>
+        <div class="col-3">
+          <q-input v-model="client.fax" label="fax" outlined dense readonly class="bg-readonly" />
         </div>
       </div>
 
