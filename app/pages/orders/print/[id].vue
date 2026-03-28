@@ -118,20 +118,20 @@
             <tbody>
               <tr>
                 <td class="p-fin-label">C/A</td>
-                <td class="p-fin-value">{{ formatNum(order.ca) }}</td>
+                <td class="p-fin-value">{{ formatEuro(order.ca) }}</td>
               </tr>
               <tr>
                 <td class="p-fin-label">RD</td>
-                <td class="p-fin-value">{{ formatNum(order.rd) }}</td>
+                <td class="p-fin-value">{{ formatEuro(order.rd) }}</td>
               </tr>
               <tr>
                 <td class="p-fin-label">Ric.</td>
-                <td class="p-fin-value">{{ formatNum(order.ric) }}</td>
+                <td class="p-fin-value">{{ formatEuro(order.ric) }}</td>
               </tr>
               <tr class="p-fin-saldo-row">
                 <td class="p-fin-label">Saldo</td>
                 <td class="p-fin-value p-bold">
-                  {{ formatNum(order.balance) }}
+                  {{ formatEuro(order.balance) }}
                 </td>
               </tr>
               <tr>
@@ -139,7 +139,7 @@
               </tr>
               <tr>
                 <td class="p-fin-label">Pag.</td>
-                <td class="p-fin-value">{{ formatNum(order.pay) }}</td>
+                <td class="p-fin-value">{{ formatEuro(order.pay) }}</td>
               </tr>
             </tbody>
           </table>
@@ -205,7 +205,7 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
-
+import { formatEuro } from "~/utils/formatters";
 definePageMeta({ layout: false })
 
 const route = useRoute();
@@ -222,10 +222,7 @@ const formatDate = (d) => {
   return new Date(d).toLocaleDateString("it-IT");
 };
 
-const formatNum = (v) => {
-  if (v == null) return "0,00";
-  return new Intl.NumberFormat("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
-};
+
 
 const clientFullName = computed(() => {
   const c = order.value?.clientId;
@@ -344,7 +341,7 @@ onMounted(async () => {
 /* ── Sezione principale ── */
 .p-main-section {
   display: grid;
-  grid-template-columns: 220px 1fr 140px;
+  grid-template-columns: 220px 1fr 200px;
   gap: 16px;
   align-items: start;
 }
@@ -576,7 +573,7 @@ onMounted(async () => {
   .p-commnum { font-size: 18px; }
 
   .p-main-section {
-    grid-template-columns: 200px 1fr 130px;
+    grid-template-columns: 200px 1fr 180px;
   }
 
   .p-items-table th,

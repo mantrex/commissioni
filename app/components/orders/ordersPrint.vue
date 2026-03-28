@@ -21,7 +21,7 @@
               {{ order[col.field] ? '✓' : '' }}
             </template>
             <template v-else-if="col.field === 'balance'">
-              {{ formatCurrency(order[col.field]) }}
+              {{ formatEuro(order[col.field]) }}
             </template>
             <template v-else>
               {{ order[col.field] }}
@@ -38,6 +38,7 @@
 </template>
 
 <script setup>
+import { formatEuro } from '~/utils/formatters'
 const props = defineProps({
   orders: { type: Array, default: () => [] },
   fields: { type: Array, default: () => [] }
@@ -67,7 +68,7 @@ const visibleColumns = computed(() =>
 )
 
 const formatDate = (d) => d ? new Date(d).toLocaleDateString('it-IT') : ''
-const formatCurrency = (v) => v != null ? new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(v) : ''
+
 </script>
 
 <style scoped>

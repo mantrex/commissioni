@@ -1,4 +1,5 @@
 import { getConfigValue, isConfigActive } from "#shared/config";
+import { formatEuro } from "~/utils/formatters";
 
 export const useOrderPrint = () => {
   const $q = useQuasar();
@@ -24,20 +25,14 @@ export const useOrderPrint = () => {
   ];
 
   const fmtDate = (d) => (d ? new Date(d).toLocaleDateString("it-IT") : "");
-  const fmtCurrency = (v) =>
-    v != null
-      ? new Intl.NumberFormat("it-IT", {
-          style: "currency",
-          currency: "EUR",
-        }).format(v)
-      : "";
+
 
   const renderCell = (o, col) => {
     if (col.field === "date" || col.field === "shipDate")
       return fmtDate(o[col.field]);
     if (col.field === "ca" || col.field === "rd")
       return o[col.field] ? "✓" : "";
-    if (col.field === "balance") return fmtCurrency(o[col.field]);
+    if (col.field === "balance") return formatEuro(o[col.field]);
     return o[col.field] || "";
   };
 

@@ -25,7 +25,7 @@
             <span class="invoice-client">{{ getClientName(inv.client) }}</span>
           </div>
           <div class="invoice-meta">
-            <span class="invoice-total">{{ formatCurrency(inv.total) }}</span>
+            <span class="invoice-total">{{ formatEuro(inv.total) }}</span>
             <q-badge
               :color="inv.issued ? 'positive' : 'grey-5'"
               :label="inv.issued ? 'Emessa' : 'Bozza'"
@@ -115,7 +115,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-
+import { formatEuro } from '~/utils/formatters'
 const props = defineProps({
   commNum: { type: String, default: null },
   orderId: { type: String, default: null },
@@ -198,10 +198,6 @@ const formatDate = (date) => {
   return new Date(date).toLocaleDateString('it-IT')
 }
 
-const formatCurrency = (value) => {
-  if (!value && value !== 0) return ''
-  return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value)
-}
 
 const getClientName = (client) => {
   if (!client) return ''

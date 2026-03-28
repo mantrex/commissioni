@@ -133,6 +133,7 @@
 <script setup>
 import { ref, reactive, watch, nextTick } from 'vue'
 import { useQuasar } from 'quasar'
+import {formatEuro} from "~/utils/formatters"
 
 const shipments = defineModel('shipments', {
   type: Array,
@@ -158,15 +159,6 @@ const financial = defineModel('financial', {
 const $q = useQuasar()
 const collapsed = ref(false)
 
-// ─── Formattazione euro ───────────────────────────────────────────────────────
-const formatEuro = (value) => {
-  const n = parseFloat(value)
-  if (isNaN(n)) return ''
-  return new Intl.NumberFormat('it-IT', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(n)
-}
 
 const parseEuro = (value) => {
   if (value === null || value === undefined || value === '') return 0

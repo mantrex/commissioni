@@ -23,13 +23,13 @@
 
         <template v-slot:body-cell-unitPrice="props">
           <q-td :props="props" class="text-right">
-            {{ formatCurrency(props.row.unitPrice) }}
+            {{ formatEuro(props.row.unitPrice) }}
           </q-td>
         </template>
 
         <template v-slot:body-cell-total="props">
           <q-td :props="props" class="text-right text-weight-bold">
-            {{ formatCurrency((props.row.quantity || 0) * (props.row.unitPrice || 0)) }}
+            {{ formatEuro((props.row.quantity || 0) * (props.row.unitPrice || 0)) }}
           </q-td>
         </template>
 
@@ -53,6 +53,7 @@
 import { reactive, watch } from 'vue'
 import ComponentDialog from '~/components/common/ComponentDialog.vue'
 import InvoiceItemDialog from '~/components/invoice-edit/InvoiceItemDialog.vue'
+import {formatEuro } from "~/utils/formatters"
 
 const items = defineModel('items', {
   type: Array,
@@ -77,10 +78,7 @@ const columns = [
   { name: 'actions', label: 'Azioni', align: 'center', style: 'width: 100px' }
 ]
 
-const formatCurrency = (value) => {
-  if (value === null || value === undefined) return '€ 0,00'
-  return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value)
-}
+
 
 const handleAdd = () => {
   dialog.data = { code: '', description: '', quantity: 0, unitPrice: 0 }

@@ -67,7 +67,7 @@
       <!-- Colonna Totale -->
       <template v-slot:body-cell-total="props">
         <q-td :props="props" class="text-right">
-          {{ formatCurrency(props.row.total) }}
+          {{ formatEuro(props.row.total) }}
         </q-td>
       </template>
 
@@ -118,7 +118,7 @@
 
 <script setup>
 import { computed } from "vue";
-
+import {formatEuro } from "~/utils/formatters"
 const props = defineProps({
   invoices: {
     type: Array,
@@ -202,13 +202,6 @@ const formatDate = (date) => {
   return new Date(date).toLocaleDateString("it-IT");
 };
 
-const formatCurrency = (value) => {
-  if (value === null || value === undefined) return "€ 0,00";
-  return new Intl.NumberFormat("it-IT", {
-    style: "currency",
-    currency: "EUR",
-  }).format(value);
-};
 
 const getClientName = (client) => {
   if (!client) return "N/A";

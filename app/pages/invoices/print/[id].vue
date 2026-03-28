@@ -151,10 +151,10 @@
                 <td class="col-qty text-center">{{ item.quantity }}</td>
                 <td class="col-desc">{{ item.description }}</td>
                 <td class="col-price text-right">
-                  {{ formatCurrency(item.unitPrice) }}
+                  {{ formatEuro(item.unitPrice) }}
                 </td>
                 <td class="col-total text-right">
-                  {{ formatCurrency(item.quantity * item.unitPrice) }}
+                  {{ formatEuro(item.quantity * item.unitPrice) }}
                 </td>
               </tr>
 
@@ -173,15 +173,15 @@
                   <div class="totals-block">
                     <div class="total-line">
                       <span>Total</span>
-                      <span>{{ formatCurrency(invoice.taxable) }}</span>
+                      <span>{{ formatEuro(invoice.taxable) }}</span>
                     </div>
                     <div class="total-line" v-if="invoice.deposit">
                       <span>Deposito</span>
-                      <span>{{ formatCurrency(invoice.deposit) }}</span>
+                      <span>{{ formatEuro(invoice.deposit) }}</span>
                     </div>
                     <div class="total-line" v-if="invoice.cod">
                       <span>C.O.D.</span>
-                      <span>{{ formatCurrency(invoice.cod) }}</span>
+                      <span>{{ formatEuro(invoice.cod) }}</span>
                     </div>
                     <div class="total-line seao">
                       <span></span><span>S. E. &amp; O.</span>
@@ -235,10 +235,10 @@
           </thead>
           <tbody>
             <tr>
-              <td>{{ formatCurrency(invoice.taxable) }}</td>
+              <td>{{ formatEuro(invoice.taxable) }}</td>
               <td>
                 <span v-if="invoice.hasVat">{{
-                  formatCurrency(invoice.vatAmount)
+                  formatEuro(invoice.vatAmount)
                 }}</span>
               </td>
               <td>
@@ -248,7 +248,7 @@
                 <span v-else>IVA {{getConfig("IVA").value}}%</span>
               </td>
               <td class="grand-total">
-                {{ formatCurrency(invoice.total) }}
+                {{ formatEuro(invoice.total) }}
                 <div class="seao-small">S.E.&amp;O.</div>
               </td>
             </tr>
@@ -265,6 +265,8 @@
 import { ref, computed, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { getConfig } from "~~/shared/config.js"
+import {formatEuro } from "~/utils/formatters"
+
 const route = useRoute();
 const router = useRouter();
 const invoice = ref(null);
@@ -328,15 +330,6 @@ const formatDate = (date) => {
   });
 };
 
-const formatCurrency = (val) => {
-  if (val === null || val === undefined || val === "") return "";
-  return (
-    Number(val).toLocaleString("it-IT", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }) + " €"
-  );
-};
 
 const handleBack = () => router.back();
 const handlePrint = () => window.print();
