@@ -297,21 +297,29 @@ const populateInvoiceData = (invoice) => {
   invoiceData.shippingLabel = invoice.shippingLabel || {};
 };
 
+// In app/components/invoices/InvoicesForm.vue
+// Sostituisci SOLO il blocco populateFromOrder con questo:
+
 const populateFromOrder = (order) => {
   if (order.clientId) {
     invoiceData.client = {
-      clientId: order.clientId._id,
+      clientId:  order.clientId._id,
       firstname: order.clientId.firstname || "",
-      lastname: order.clientId.lastname || "",
-      title: "",
-      company: order.clientId.company || "",
-      address: order.clientId.address || "",
-      cap: order.clientId.cap || "",
-      city: order.clientId.city || "",
-      region: order.clientId.region || "",
-      state: order.clientId.state || "",
-      tel: order.clientId.tel || "",
-      piva: order.clientId.piva || "",
+      lastname:  order.clientId.lastname || "",
+      title:     "",
+      company:   order.clientId.company || "",
+      address:   order.clientId.address || "",
+      cap:       order.clientId.cap || "",
+      city:      order.clientId.city || "",
+      region:    order.clientId.region || "",
+      state:     order.clientId.state || "",
+      tel:       order.clientId.tel || "",
+      fax:       order.clientId.fax || "",
+      email:     order.clientId.email || "",
+      tels:      order.clientId.tels || [],
+      faxes:     order.clientId.faxes || [],
+      emails:    order.clientId.emails || [],
+      piva:      order.clientId.piva || "",
     };
   }
 
@@ -322,12 +330,12 @@ const populateFromOrder = (order) => {
     invoiceData.items = order.items
       .filter((item) => item.invoiced)
       .map((item) => ({
-        productId: item.productId?._id || item.productId || null,
+        productId:   item.productId?._id || item.productId || null,
         orderItemId: item._id,
-        code: item.productId?.code || item.code || "",
+        code:        item.productId?.code || item.code || "",
         description: item.productId?.name || item.description || "",
-        quantity: item.quantity || 0,
-        unitPrice: 0,
+        quantity:    item.quantity || 0,
+        unitPrice:   0,
       }));
   }
 };

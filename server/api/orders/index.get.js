@@ -7,6 +7,7 @@ import {
   getStatusLabel,
   getStatusCode,
 } from "~~/server/utils/statuses";
+import { Types } from "mongoose";
 
 export default defineEventHandler(async (event) => {
   try {
@@ -21,7 +22,7 @@ export default defineEventHandler(async (event) => {
     const effectiveSortBy = sortBy === "commNum" ? "commNumInt" : sortBy;
     const sort = { [effectiveSortBy]: sortDesc ? -1 : 1 };
 
-    // ── Filtri su campi diretti dell'ordine ──────────────────────────────────
+    // ── Filtri diretti sull'ordine ───────────────────────────────────────────
     const match = { deletedAt: null };
 
     if (query.commNum) match.commNum = { $regex: query.commNum, $options: "i" };
@@ -47,8 +48,6 @@ export default defineEventHandler(async (event) => {
     if (query.balanceOpen === "true") match.balance = { $ne: 0 };
     else if (query.balanceClosed === "true") match.balance = 0;
 
-    if (query.agentId) match.agentId = query.agentId;
-
     if (query.dateFrom || query.dateTo) {
       match.date = {};
       if (query.dateFrom) match.date.$gte = new Date(query.dateFrom);
@@ -72,70 +71,109 @@ export default defineEventHandler(async (event) => {
       match["items.productId"] = { $in: products.map((p) => p._id) };
     }
 
-    // ── Filtri su campi del cliente (post-lookup) ────────────────────────────
+    // ── Filtri post-lookup cliente ───────────────────────────────────────────
     const clientMatch = {};
     if (query.clientLastname)
-      clientMatch["clientId.lastname"] = {
-        $regex: query.clientLastname,
-        $options: "i",
-      };
+      clientMatch["clientId.lastname"] = { $regex: query.clientLastname, $options: "i" };
     if (query.clientFirstname)
-      clientMatch["clientId.firstname"] = {
-        $regex: query.clientFirstname,
-        $options: "i",
-      };
+      clientMatch["clientId.firstname"] = { $regex: query.clientFirstname, $options: "i" };
     if (query.clientCity)
-      clientMatch["clientId.city"] = {
-        $regex: query.clientCity,
-        $options: "i",
-      };
+      clientMatch["clientId.city"] = { $regex: query.clientCity, $options: "i" };
     if (query.clientCountry)
-      clientMatch["clientId.state"] = {
-        $regex: query.clientCountry,
-        $options: "i",
-      };
+      clientMatch["clientId.state"] = { $regex: query.clientCountry, $options: "i" };
     if (query.clientVip !== undefined)
       clientMatch["clientId.vip"] = query.clientVip === "true";
 
-    // ── Aggregation pipeline ─────────────────────────────────────────────────
-    const pipeline = [
-      { $match: match },
-      {
-        $lookup: {
-          from: "clients",
-          localField: "clientId",
-          foreignField: "_id",
-          as: "clientId",
-        },
-      },
-      { $unwind: { path: "$clientId", preserveNullAndEmptyArrays: true } },
-      ...(Object.keys(clientMatch).length > 0 ? [{ $match: clientMatch }] : []),
-      {
-        $lookup: {
-          from: "agents",
-          localField: "agentId",
-          foreignField: "_id",
-          as: "agentId",
-        },
-      },
-      { $unwind: { path: "$agentId", preserveNullAndEmptyArrays: true } },
-      { $sort: sort },
-      {
-        $facet: {
-          orders: [{ $skip: skip }, { $limit: limit }],
-          total: [{ $count: "count" }],
-        },
-      },
-    ];
+    // ── Filtri post-lookup agente ────────────────────────────────────────────
+    const agentMatch = {};
+    if (query.agentId) {
+      agentMatch["$or"] = [
+        { "agentId.lastname": { $regex: query.agentId, $options: "i" } },
+        { "agentId.firstname": { $regex: query.agentId, $options: "i" } },
+      ];
+    }
 
-    const [result] = await Order.aggregate(pipeline);
-    const orders = result.orders;
-    const total = result.total[0]?.count || 0;
+    const hasClientFilter = Object.keys(clientMatch).length > 0;
+    const hasAgentFilter = Object.keys(agentMatch).length > 0;
 
-    // ── Arricchisci con info fatture e stato ─────────────────────────────────
+    let orders, total;
+
+    if (!hasClientFilter && !hasAgentFilter) {
+      // ── PATH VELOCE: nessun filtro su cliente/agente ─────────────────────
+      // Sort + pagina PRIMA dei lookup, join solo sui 25 record risultanti.
+      // countDocuments usa direttamente gli indici, molto più veloce del $facet.
+      const [rawOrders, count] = await Promise.all([
+        Order.aggregate([
+          { $match: match },
+          { $sort: sort },
+          { $skip: skip },
+          { $limit: limit },
+          {
+            $lookup: {
+              from: "clients",
+              localField: "clientId",
+              foreignField: "_id",
+              as: "clientId",
+            },
+          },
+          { $unwind: { path: "$clientId", preserveNullAndEmptyArrays: true } },
+          {
+            $lookup: {
+              from: "agents",
+              localField: "agentId",
+              foreignField: "_id",
+              as: "agentId",
+            },
+          },
+          { $unwind: { path: "$agentId", preserveNullAndEmptyArrays: true } },
+        ]),
+        Order.countDocuments(match),
+      ]);
+
+      orders = rawOrders;
+      total = count;
+
+    } else {
+      // ── PATH CON FILTRI CLIENTE/AGENTE: lookup prima del sort ───────────
+      const [result] = await Order.aggregate([
+        { $match: match },
+        {
+          $lookup: {
+            from: "clients",
+            localField: "clientId",
+            foreignField: "_id",
+            as: "clientId",
+          },
+        },
+        { $unwind: { path: "$clientId", preserveNullAndEmptyArrays: true } },
+        ...(hasClientFilter ? [{ $match: clientMatch }] : []),
+        {
+          $lookup: {
+            from: "agents",
+            localField: "agentId",
+            foreignField: "_id",
+            as: "agentId",
+          },
+        },
+        { $unwind: { path: "$agentId", preserveNullAndEmptyArrays: true } },
+        ...(hasAgentFilter ? [{ $match: agentMatch }] : []),
+        { $sort: sort },
+        {
+          $facet: {
+            orders: [{ $skip: skip }, { $limit: limit }],
+            total: [{ $count: "count" }],
+          },
+        },
+      ]);
+
+      orders = result.orders;
+      total = result.total[0]?.count || 0;
+    }
+
+    // ── Arricchisci con fatture e stato ──────────────────────────────────────
     const orderCommNums = orders.map((o) => o.commNum).filter(Boolean);
     const invoices = await Invoice.find(
-      { commNum: { $in: orderCommNums } },
+      { commNum: { $in: orderCommNums }, deletedAt: null },
       { commNum: 1 },
     ).lean();
     const invoicedCommNums = new Set(invoices.map((inv) => inv.commNum));

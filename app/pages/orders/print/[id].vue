@@ -72,17 +72,26 @@
               — {{ order.clientId.state }}</span
             >
           </div>
-          <div v-if="order.clientId?.tel" class="p-client-line">
-            Tel: {{ order.clientId.tel }}
-          </div>
-          <div v-if="order.clientId?.fax" class="p-client-line">
-            Fax: {{ order.clientId.fax }}
-          </div>
           <div v-if="order.clientId?.piva" class="p-client-line">
             P.IVA: {{ order.clientId.piva }}
           </div>
-          <div v-if="order.clientId?.email" class="p-client-line">
-            EMAIL: {{ order.clientId.email }}
+          <div
+            v-for="email in allEmails(order.clientId)"
+            :key="'em-' + email"
+            class="p-client-line">
+            Email: {{ email }}
+          </div>
+          <div
+            v-for="tel in allTels(order.clientId)"
+            :key="'tel-' + tel"
+            class="p-client-line">
+            Tel: {{ tel }}
+          </div>
+          <div
+            v-for="fax in allFaxes(order.clientId)"
+            :key="'fax-' + fax"
+            class="p-client-line">
+            Fax: {{ fax }}
           </div>
           <div v-if="order.clientId?.vip" class="p-vip-badge">★ VIP</div>
         </div>
@@ -206,6 +215,7 @@
 import { ref, computed, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { formatEuro } from "~/utils/formatters";
+import { allTels, allEmails, allFaxes } from "~/utils/contacts";
 definePageMeta({ layout: false })
 
 const route = useRoute();
@@ -221,8 +231,6 @@ const formatDate = (d) => {
   if (!d) return "";
   return new Date(d).toLocaleDateString("it-IT");
 };
-
-
 
 const clientFullName = computed(() => {
   const c = order.value?.clientId;

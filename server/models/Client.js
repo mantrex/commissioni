@@ -47,6 +47,18 @@ const clientSchema = new mongoose.Schema({
     trim: true,
     lowercase: true
   },
+  tels: {
+    type: [String],
+    default: []
+  },
+  faxes: {
+    type: [String],
+    default: []
+  },
+  emails: {
+    type: [String],
+    default: []
+  },
   piva: {
     type: String,
     trim: true
@@ -60,8 +72,10 @@ const clientSchema = new mongoose.Schema({
 })
 
 // Index per ricerche
-clientSchema.index({ lastname: 1, firstname: 1 })
-clientSchema.index({ company: 1 })
-clientSchema.index({ vip: 1 })
+clientSchema.index({ lastname: 1, firstname: 1 }); // già presente
+clientSchema.index({ company: 1 });                // già presente
+clientSchema.index({ vip: 1 });                    // già presente
+clientSchema.index({ city: 1 });                   // filtro clientCity negli ordini
+clientSchema.index({ state: 1 });                  // filtro clientCountry negli ordini
 
 export default mongoose.models.Client || mongoose.model('Client', clientSchema)

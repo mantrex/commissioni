@@ -809,14 +809,23 @@ $font-size-xs: 9px;
     margin: 0 !important;
     padding: 0 !important;
     height: auto !important;
-    overflow: hidden !important;
+    overflow: visible !important;
+  }
+
+  :global(.q-page),
+  :global(.q-layout),
+  :global(.q-page-container) {
+    min-height: 0 !important;
+    height: auto !important;
+    padding: 0 !important;
+    overflow: visible !important;
   }
 
   .print-invoice-page {
     background: $contrast !important;
     padding: 0 !important;
     margin: 0 !important;
-    min-height: unset !important;
+    min-height: 0 !important;
     height: auto !important;
     overflow: visible !important;
   }
@@ -831,7 +840,6 @@ $font-size-xs: 9px;
 
   .invoice-page-inner {
     padding: 8mm 10mm;
-    // Altezza precisa: 297mm (A4) - 16mm (2 * padding 8mm)
     height: 281mm;
     page-break-inside: avoid;
     page-break-after: avoid;

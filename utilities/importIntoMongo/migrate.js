@@ -230,6 +230,7 @@ export async function migrateOrders(
               ready: itemRow.Pronto === 1,
               ordered: itemRow.Ordinato === 1,
               invoiced: itemRow.Fatturato === -1,
+              note: itemRow.NoteArt || "",
 
               //ready: itemRow.Pronto == null ? true : false, // NULL = true
               //ordered: itemRow.Ordinato == null ? true : false, // NULL = true

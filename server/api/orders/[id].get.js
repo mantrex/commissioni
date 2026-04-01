@@ -1,38 +1,33 @@
+// server/api/orders/[id].get.js
 import Order from '~~/server/models/Order'
 import '~~/server/models/Client'
 import '~~/server/models/Agent'
 import '~~/server/models/Product'
 
+const CLIENT_FIELDS = 'firstname lastname company address cap city region state tel fax email tels faxes emails piva vip'
+
 export default defineEventHandler(async (event) => {
   const orderId = getRouterParam(event, 'id')
 
   try {
-    const order = await Order.findOne({_id:orderId,deletedAt:null})
-      .populate('clientId', 'firstname lastname company address cap city region state tel fax email piva vip')
+    const order = await Order.findOne({ _id: orderId, deletedAt: null })
+      .populate('clientId', CLIENT_FIELDS)
       .populate('agentId', 'firstname lastname')
       .populate('items.productId', 'code name details invoiced')
       .lean()
 
     if (!order) {
-      throw createError({
-        statusCode: 404,
-        message: 'Ordine non trovato'
-      })
+      throw createError({ statusCode: 404, message: 'Ordine non trovato' })
     }
 
-    return {
-      success: true,
-      order
-    }
+    return { success: true, order }
 
   } catch (error) {
     console.error('Errore API get order:', error)
-
     if (error.statusCode) throw error
-
     throw createError({
       statusCode: 500,
-      message: 'Errore nel recupero dell\'ordine',
+      message: "Errore nel recupero dell'ordine",
       data: error.message
     })
   }

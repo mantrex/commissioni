@@ -148,13 +148,22 @@ orderSchema.pre("save", function () {
  
 
 // Index per ricerche comuni
+
+orderSchema.index({ commNumInt: -1 });       // sort principale lista ordini
 orderSchema.index({ clientId: 1 });
 orderSchema.index({ agentId: 1 });
 orderSchema.index({ status: 1 });
 orderSchema.index({ date: -1 });
 orderSchema.index({ dueDate: 1 });
+orderSchema.index({ balance: 1 });           // filtro balanceOpen/balanceClosed
+orderSchema.index({ "items.productId": 1 }); // filtro per productCode
+
+// Indici composti (coprono i pattern query più frequenti)
+orderSchema.index({ deletedAt: 1, status: 1 });
+orderSchema.index({ deletedAt: 1, date: -1 });
+orderSchema.index({ deletedAt: 1, dueDate: 1 });
+orderSchema.index({ deletedAt: 1, commNumInt: -1 });
 orderSchema.index({ dueDate: 1, status: 1 });
-orderSchema.index({ deletedAt: 1 });
 
 // ✅ EXPORT CORRETTO
 export default mongoose.models.Order || mongoose.model("Order", orderSchema);

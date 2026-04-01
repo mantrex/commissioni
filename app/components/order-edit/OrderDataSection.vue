@@ -18,7 +18,8 @@
             readonly
             :bg-color="'readonly'"
             input-style="font-family: monospace; font-weight: 600;"
-            class="commnum-input">
+            class="commnum-input"
+          >
             <template v-slot:prepend>
               <q-icon name="tag" />
             </template>
@@ -31,7 +32,8 @@
             size="sm"
             color="primary"
             class="commnum-edit-btn"
-            @click="emit('editCommNum')">
+            @click="emit('editCommNum')"
+          >
             <q-tooltip>Modifica numero commissione</q-tooltip>
           </q-btn>
         </div>
@@ -45,7 +47,9 @@
           type="date"
           class="is-important"
           outlined
-          dense>
+          @blur="normalizeYear('date')"
+          dense
+        >
           <template v-slot:prepend>
             <q-icon name="event" />
           </template>
@@ -54,7 +58,14 @@
 
       <!-- Scadenza -->
       <div class="col-12 col-sm-6">
-        <q-input v-model="data.dueDate" label="Scad" type="date" outlined dense>
+        <q-input
+          v-model="data.dueDate"
+          label="Scad"
+          type="date"
+          outlined
+          @blur="normalizeYear('dueDate')"
+          dense
+        >
           <template v-slot:prepend>
             <q-icon name="event_available" />
           </template>
@@ -77,7 +88,8 @@
             clearable
             use-input
             @filter="filterAgents"
-            class="agent-select">
+            class="agent-select"
+          >
             <template v-slot:prepend>
               <q-icon name="person" />
             </template>
@@ -90,7 +102,8 @@
             size="sm"
             color="primary"
             @click="emit('editAgent')"
-            class="agent-edit-btn">
+            class="agent-edit-btn"
+          >
             <q-tooltip>Gestisci Agenti</q-tooltip>
           </q-btn>
         </div>
@@ -111,7 +124,8 @@
           dense
           clearable
           use-input
-          @filter="filterStatuses">
+          @filter="filterStatuses"
+        >
           <template v-slot:prepend>
             <q-icon name="flag" />
           </template>
@@ -152,6 +166,21 @@ const emit = defineEmits(["editAgent", "editCommNum"]);
 const statusOptions = ref([]);
 const allAgents = ref([]);
 const agentOptions = ref([]);
+
+const normalizeYear = (field) => {
+  
+
+  const val = data.value[field]
+  if (!val) return
+  // formato ISO: YYYY-MM-DD
+  const parts = val.split('-')
+  if (parts.length !== 3) return
+  let year = parseInt(parts[0])
+  if (year < 100) {
+    year += 2000
+    data.value[field] = `${year}-${parts[1]}-${parts[2]}`
+  }
+}
 
 const filterStatuses = (val, update) => {
   if (val === "") {
@@ -195,32 +224,36 @@ const filterAgents = (val, update) => {
   });
 };
 
-watch(() => data.value.date, (newDate) => {
-  if (!newDate) return
-  const d = new Date(newDate)
-  d.setDate(d.getDate() + deadline)
-  data.value.dueDate = d.toISOString().split('T')[0]
-})
+watch(
+  () => data.value.date,
+  (newDate) => {
+    if (!newDate) return;
+    const d = new Date(newDate);
+    d.setDate(d.getDate() + deadline);
+    data.value.dueDate = d.toISOString().split("T")[0];
+  },
+);
 
-const STATUSES_NO_DUEDATE = ['SPEDITO', 'ANNULLATA', 'ARCHIVIO', 'STORNO']
+const STATUSES_NO_DUEDATE = ["SPEDITO", "ANNULLATA", "ARCHIVIO", "STORNO"];
 
-watch(() => data.value.status, (newStatus) => {
-  if (STATUSES_NO_DUEDATE.includes(newStatus)) {
-    setTimeout(()=>{
-      data.value.dueDate = null
-    },30)
-  }
-})
+watch(
+  () => data.value.status,
+  (newStatus) => {
+    if (STATUSES_NO_DUEDATE.includes(newStatus)) {
+      setTimeout(() => {
+        data.value.dueDate = null;
+      }, 30);
+    }
+  },
+);
 
 onMounted(async () => {
   await loadStatuses();
   statusOptions.value = allStatuses.value;
   await loadAgents();
-
-
 });
 
-defineExpose({ loadAgents })
+defineExpose({ loadAgents });
 </script>
 
 <style scoped lang="scss">
@@ -235,8 +268,6 @@ defineExpose({ loadAgents })
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-
- 
 
   .section-label {
     font-weight: 600;
@@ -273,6 +304,6 @@ defineExpose({ loadAgents })
   }
 }
 .is-important {
-  background:$important;
+  background: $important;
 }
 </style>
