@@ -200,7 +200,7 @@
           <!-- ── PACCHI MULTIPLI ── -->
           <table
             class="inv-packages-table"
-            v-if="invoice.packages && invoice.packages.length > 1">
+            v-if="invoice.packages && invoice.packages.length > 0">
             <thead>
               <tr>
                 <th>N. Pacco</th>
