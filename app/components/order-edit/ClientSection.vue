@@ -133,15 +133,27 @@ const client = defineModel('client', {
 const emit = defineEmits(['editClient'])
 
 const selectedClientOption = ref(null)
-const allClients = ref([])
-const clientOptions = ref([])
+const clientOptions = ref([
+  { label: '+ Crea nuovo cliente', value: 'new', isNew: true }
+])
 const showEmptyForm = ref(false)
 
-const loadClients = async () => {
-  try {
-    const data = await $fetch('/api/clients')
-    if (data) {
-      allClients.value = data.clients.map(c => {
+let searchTimeout = null
+
+const filterClients = (val, update) => {
+  if (val.length < 2) {
+    update(() => {
+      clientOptions.value = [
+        { label: '+ Crea nuovo cliente', value: 'new', isNew: true }
+      ]
+    })
+    return
+  }
+  clearTimeout(searchTimeout)
+  searchTimeout = setTimeout(async () => {
+    try {
+      const data = await $fetch(`/api/clients/search?q=${encodeURIComponent(val)}`)
+      const mapped = (data.clients || []).map(c => {
         const fullName = `${c.lastname || ''} ${c.firstname || ''}`.trim()
         return {
           label: fullName || c.company || 'N/A',
@@ -151,38 +163,17 @@ const loadClients = async () => {
           isNew: false
         }
       })
-      clientOptions.value = [
-        { label: '+ Crea nuovo cliente', value: 'new', isNew: true },
-        ...allClients.value
-      ]
+      update(() => {
+        clientOptions.value = [
+          { label: '+ Crea nuovo cliente', value: 'new', isNew: true },
+          ...mapped
+        ]
+      })
+    } catch (err) {
+      console.error('Errore ricerca clienti:', err)
+      update(() => {})
     }
-  } catch (err) {
-    console.error('Errore caricamento clienti:', err)
-  }
-}
-
-const filterClients = (val, update) => {
-  if (val === '') {
-    update(() => {
-      clientOptions.value = [
-        { label: '+ Crea nuovo cliente', value: 'new', isNew: true },
-        ...allClients.value
-      ]
-    })
-    return
-  }
-  update(() => {
-    const needle = val.toLowerCase()
-    const filtered = allClients.value.filter(
-      c => c.label.toLowerCase().includes(needle) ||
-        (c.caption && c.caption.toLowerCase().includes(needle)) ||
-        (c.client.company && c.client.company.toLowerCase().includes(needle))
-    )
-    clientOptions.value = [
-      { label: '+ Crea nuovo cliente', value: 'new', isNew: true },
-      ...filtered
-    ]
-  })
+  }, 300)
 }
 
 const handleClientSelect = (option) => {
@@ -199,8 +190,6 @@ const handleClientSelect = (option) => {
     showEmptyForm.value = false
   }
 }
-
-loadClients()
 </script>
 
 <style scoped lang="scss">

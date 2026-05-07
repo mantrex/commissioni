@@ -6,8 +6,8 @@
 // Uso nel server:  import { getConfigValue } from '#shared/config'
 
 export const APP_CONFIG = [
-  { code: "AUTOSAVE_ORDERS", value: 10, active: true },
-  { code: "AUTOSAVE_INVOICES", value: 10, active: true },
+  { code: "AUTOSAVE_ORDERS", value: 5, active: true },
+  { code: "AUTOSAVE_INVOICES", value: 5, active: true },
   {
     code: "ORDERPRINTFIELDS",
     value: [

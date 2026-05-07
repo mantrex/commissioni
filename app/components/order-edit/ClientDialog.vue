@@ -240,31 +240,39 @@ const $q = useQuasar()
 const saving = ref(false)
 const localClient = ref({ ...props.client })
 const selectedClientOption = ref(null)
-const allClients = ref([])
-const clientOptions = ref([])
+const clientOptions = ref([
+  { label: '➕ Crea nuovo cliente', value: 'new', isNew: true }
+])
 
-// Ref separati per i contatti (array di stringhe, il primo è il principale)
 const localTels   = ref([''])
 const localFaxes  = ref([''])
 const localEmails = ref([''])
 
-// Sincronizza i ref contatti quando cambia localClient
 watch(localClient, (c) => {
   localTels.value   = [c.tel   || '', ...(c.tels   || [])]
   localFaxes.value  = [c.fax   || '', ...(c.faxes  || [])]
   localEmails.value = [c.email || '', ...(c.emails  || [])]
-  // Garantisce almeno un campo vuoto
   if (localTels.value.length === 0)   localTels.value   = ['']
   if (localFaxes.value.length === 0)  localFaxes.value  = ['']
   if (localEmails.value.length === 0) localEmails.value = ['']
 }, { immediate: true, deep: false })
 
-// Carica lista clienti
-const loadClients = async () => {
-  try {
-    const data = await $fetch('/api/clients')
-    if (data) {
-      allClients.value = data.clients.map(c => {
+let searchTimeout = null
+
+const filterClients = (val, update) => {
+  if (val.length < 2) {
+    update(() => {
+      clientOptions.value = [
+        { label: '➕ Crea nuovo cliente', value: 'new', isNew: true }
+      ]
+    })
+    return
+  }
+  clearTimeout(searchTimeout)
+  searchTimeout = setTimeout(async () => {
+    try {
+      const data = await $fetch(`/api/clients/search?q=${encodeURIComponent(val)}`)
+      const mapped = (data.clients || []).map(c => {
         const fullName = `${c.lastname || ''} ${c.firstname || ''}`.trim()
         return {
           label: fullName || c.company || 'N/A',
@@ -274,38 +282,17 @@ const loadClients = async () => {
           isNew: false
         }
       })
-      clientOptions.value = [
-        { label: '➕ Crea nuovo cliente', value: 'new', isNew: true },
-        ...allClients.value
-      ]
+      update(() => {
+        clientOptions.value = [
+          { label: '➕ Crea nuovo cliente', value: 'new', isNew: true },
+          ...mapped
+        ]
+      })
+    } catch (err) {
+      console.error('Errore ricerca clienti:', err)
+      update(() => {})
     }
-  } catch (err) {
-    console.error('Errore caricamento clienti:', err)
-  }
-}
-
-const filterClients = (val, update) => {
-  if (val === '') {
-    update(() => {
-      clientOptions.value = [
-        { label: '➕ Crea nuovo cliente', value: 'new', isNew: true },
-        ...allClients.value
-      ]
-    })
-    return
-  }
-  update(() => {
-    const needle = val.toLowerCase()
-    const filtered = allClients.value.filter(
-      c => c.label.toLowerCase().includes(needle) ||
-        (c.caption && c.caption.toLowerCase().includes(needle)) ||
-        (c.client.company && c.client.company.toLowerCase().includes(needle))
-    )
-    clientOptions.value = [
-      { label: '➕ Crea nuovo cliente', value: 'new', isNew: true },
-      ...filtered
-    ]
-  })
+  }, 300)
 }
 
 const handleClientSelect = (option) => {
@@ -321,7 +308,6 @@ const handleClientSelect = (option) => {
   }
 }
 
-// Compone i campi contatto da scrivere nel body
 const composeContacts = () => {
   localClient.value.tel    = localTels.value[0]   || ''
   localClient.value.tels   = localTels.value.slice(1).filter(Boolean)
@@ -358,8 +344,6 @@ const handleSave = async () => {
     saving.value = false
   }
 }
-
-loadClients()
 </script>
 
 <style scoped lang="scss">
