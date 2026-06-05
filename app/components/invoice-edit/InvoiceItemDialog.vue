@@ -49,7 +49,6 @@
               label="Prezzo Un. *"
               outlined dense
               inputmode="decimal"
-              :rules="[() => localItem.unitPrice >= 0 || 'Prezzo non valido']"
               @focus="onUnitPriceFocus"
               @blur="onUnitPriceBlur"
               @update:model-value="v => rawUnitPrice = v" />
@@ -231,10 +230,7 @@ const handleSave = () => {
     $q.notify({ type: 'negative', message: 'La quantità non può essere negativa' })
     return
   }
-  if (localItem.value.unitPrice < 0) {
-    $q.notify({ type: 'negative', message: 'Il prezzo non può essere negativo' })
-    return
-  }
+
   emit('close', localItem.value)
 }
 

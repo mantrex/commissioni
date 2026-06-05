@@ -611,9 +611,14 @@ const handleInvoiceDialogClose = (result) => {
 const handleEditCommNum = () => {
   dialogs.commNum.show = true;
 };
-const handleCommNumDialogClose = (newCommNum) => {
-  if (newCommNum) orderData.commNum = newCommNum;
+
+const handleCommNumDialogClose = async (newCommNum) => {
+  if (newCommNum) {
+    orderData.commNum = newCommNum;
+    await handleSave(true);
+  }
 };
+
 
 // ─── Cliente ──────────────────────────────────────────────────────────────────
 const handleEditClient = () => {
