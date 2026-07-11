@@ -63,7 +63,6 @@ const orderSchema = new mongoose.Schema(
     commNum: {
       type: String,
       required: true,
-      unique: true,
       trim: true,
     },
     commNumInt: {
@@ -157,6 +156,10 @@ orderSchema.index({ date: -1 });
 orderSchema.index({ dueDate: 1 });
 orderSchema.index({ balance: 1 });           // filtro balanceOpen/balanceClosed
 orderSchema.index({ "items.productId": 1 }); // filtro per productCode
+
+// Unicità commNum solo tra ordini con lo stesso stato di cancellazione
+// (permette di riusare un numero dopo il soft-delete dell'ordine originale)
+orderSchema.index({ commNum: 1, deletedAt: 1 }, { unique: true });
 
 // Indici composti (coprono i pattern query più frequenti)
 orderSchema.index({ deletedAt: 1, status: 1 });

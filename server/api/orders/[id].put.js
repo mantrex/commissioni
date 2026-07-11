@@ -30,6 +30,7 @@ export default defineEventHandler(async (event) => {
       const existing = await Order.findOne({
         commNum: { $regex: regex },
         _id: { $ne: orderId },
+        deletedAt: null,
       }).lean();
       if (existing) {
         throw createError({

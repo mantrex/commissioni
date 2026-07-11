@@ -24,7 +24,10 @@ export default defineEventHandler(async (event) => {
     // Usiamo $where oppure una regex che matcha tutte le varianti con zeri
     // Soluzione più semplice e performante: regex che matcha il numero con qualsiasi numero di zeri davanti
     const regex = new RegExp(`^0*${n}$`);
-    const existing = await Order.findOne({ commNum: { $regex: regex } })
+    const existing = await Order.findOne({
+      commNum: { $regex: regex },
+      deletedAt: null,
+    })
       .select("commNum")
       .lean();
 

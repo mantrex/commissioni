@@ -18,7 +18,7 @@ export default defineEventHandler(async (event) => {
     }
 
     // Verifica unicità (doppia sicurezza lato server)
-    const existing = await Order.findOne({ commNum }).lean();
+    const existing = await Order.findOne({ commNum, deletedAt: null }).lean();
     if (existing) {
       throw createError({
         statusCode: 409,
