@@ -321,14 +321,17 @@ const isNew = computed(() => !mongoId.value);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Lock anti-concorrenza.
-//   saving   → reattivo, mostrato nella UI (spinner tasto Salva)
-//   busySave → flag JS puro, settato PRIMA dell'await.
-//              Garantisce che se una chiamata è ancora in volo, il tick
-//              successivo dell'autosave (o un click manuale) la salta
-//              senza accodarsi. Ref non serve: non deve essere reattivo.
+//   saving       → reattivo, mostrato nella UI (spinner tasto Salva)
+//   busySave     → flag JS puro, settato PRIMA dell'await.
+//   saveInFlight → Promise del salvataggio in corso. Se handleSave viene
+//                  richiamato mentre è già in volo, si accoda: attende che
+//                  quello in corso finisca e poi esegue comunque il proprio
+//                  salvataggio, così un click "Salva" o una navigazione non
+//                  vengono mai persi silenziosamente.
 // ─────────────────────────────────────────────────────────────────────────────
 const saving = ref(false);
 let busySave = false;
+let saveInFlight = null;
 
 const deleting = ref(false);
 const topSectionCollapsed = ref(false);
@@ -465,46 +468,55 @@ const loadOrder = async () => {
 //   mongoId valorizzato     → sempre PUT
 // ─────────────────────────────────────────────────────────────────────────────
 const handleSave = async (silent = false, fromAuto = false) => {
-  if (busySave) return; // ← blocco immediato, prima di qualsiasi await
-  busySave = true;
-
-  if (!fromAuto) saving.value = true;
-
-  try {
-    let data;
-    if (!mongoId.value) {
-      data = await $fetch("/api/orders", { method: "POST", body: buildBody() });
-      if (data?.order?._id) {
-        mongoId.value = data.order._id;
-        router.replace(`/orders/${data.order._id}`);
-        if (data.order.commNum) orderData.commNum = data.order.commNum;
-      }
-    } else {
-      data = await $fetch(`/api/orders/${mongoId.value}`, {
-        method: "PUT",
-        body: buildBody(),
-      });
-    }
-
-    if (data?.order?.items) orderData.items = [...data.order.items];
-
-    if (!silent) {
-      $q.notify({ type: "positive", message: "Ordine salvato con successo" });
-    }
-  } catch (err) {
-    if (!silent) {
-      $q.notify({
-        type: "negative",
-        message: "Errore nel salvataggio",
-        caption: err.message,
-      });
-    } else {
-      console.error("❌ Errore autosave ordine:", err);
-    }
-  } finally {
-    busySave = false;
-    if (!fromAuto) saving.value = false;
+  if (busySave) {
+    // Un salvataggio è già in volo: accodati invece di abortire, così
+    // il click/navigazione corrente non perde le modifiche non ancora salvate.
+    await saveInFlight;
   }
+
+  const run = (async () => {
+    busySave = true;
+    if (!fromAuto) saving.value = true;
+
+    try {
+      let data;
+      if (!mongoId.value) {
+        data = await $fetch("/api/orders", { method: "POST", body: buildBody() });
+        if (data?.order?._id) {
+          mongoId.value = data.order._id;
+          router.replace(`/orders/${data.order._id}`);
+          if (data.order.commNum) orderData.commNum = data.order.commNum;
+        }
+      } else {
+        data = await $fetch(`/api/orders/${mongoId.value}`, {
+          method: "PUT",
+          body: buildBody(),
+        });
+      }
+
+      if (data?.order?.items) orderData.items = [...data.order.items];
+
+      if (!silent) {
+        $q.notify({ type: "positive", message: "Ordine salvato con successo" });
+      }
+    } catch (err) {
+      if (!silent) {
+        $q.notify({
+          type: "negative",
+          message: "Errore nel salvataggio",
+          caption: err.message,
+        });
+      } else {
+        console.error("❌ Errore autosave ordine:", err);
+      }
+    } finally {
+      busySave = false;
+      if (!fromAuto) saving.value = false;
+    }
+  })();
+
+  saveInFlight = run;
+  return run;
 };
 
 // RIMUOVI le due funzioni locali startAutosave e stopAutosave
